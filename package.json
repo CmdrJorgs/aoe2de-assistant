@@ -1,0 +1,30 @@
+{
+  "name": "aoeiide-low-elo-assistant",
+  "version": "0.0.1",
+  "description": "A tool to help noob Age Of Empires II Definitive Edition players learn how to counter their opponents and win more games.",
+  "main": "server.js",
+  "dependencies": {
+    "three": "^0.121.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "test",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CmdrJorgs/aoe2de-assistant.git"
+  },
+  "keywords": [
+    "aoe",
+    "age",
+    "of",
+    "empires"
+  ],
+  "author": "David Jorgensen",
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/CmdrJorgs/aoe2de-assistant/issues"
+  },
+  "homepage": "https://github.com/CmdrJorgs/aoe2de-assistant#readme"
+}
