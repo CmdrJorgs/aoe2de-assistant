@@ -1,15 +1,29 @@
 {
-  "name": "aoeiide-low-elo-assistant",
-  "version": "0.0.1",
+  "name": "aoeiide-assistant",
+  "version": "0.0.0",
   "description": "A tool to help noob Age Of Empires II Definitive Edition players learn how to counter their opponents and win more games.",
-  "main": "server.js",
+  "private": true,
+  "scripts": {
+    "diag": "mocha --reporter list",
+    "dev": "open-cli http://localhost:3000 && nodemon ./bin/www localhost 3000 -e js,ejs,sass,glb,png,jpg,json",
+    "watch": "",
+    "prod": "node ./bin/www"
+  },
   "dependencies": {
+    "cookie-parser": "~1.4.4",
+    "debug": "~2.6.9",
+    "ejs": "~2.6.1",
+    "express": "~4.16.1",
+    "http-errors": "~1.6.3",
+    "morgan": "~1.9.1",
+    "node-sass-middleware": "0.11.0",
     "three": "^0.121.1"
   },
-  "devDependencies": {},
-  "scripts": {
-    "test": "test",
-    "start": "node server.js"
+  "devDependencies": {
+    "mocha": "^8.2.0",
+    "open-cli": "^6.0.1",
+    "supervisor": "^0.12.0",
+    "nodemon": "^2.0.4"
   },
   "repository": {
     "type": "git",

@@ -1,0 +1,149 @@
+# CIVILIZATIONS
+[
+    {
+        "name": "Teutons",
+        "icon": "teutons.png",
+        "data": {
+            "special-units": ["camel","ostrich"],
+            "strategies": [
+                {
+                    "name": "Fast Castle",
+                    "image": "teutons-fast-castle.jpg",
+                    "video": "teutons-fast-castle.mp4",
+                    "description": "Teutons can build castles pretty fast.",
+                    "good-against": [
+                        {
+                            "civ": "Vikings",
+                            "map": {
+                                "Arabia": {
+                                    "ages": {
+                                        "dark": {
+                                            "description": "Do this.",
+                                            "tasks": [
+                                                "Create 20 villagers.",
+                                                "Build 2 houses.",
+                                                "Lure and kill two boars."
+                                            ]
+                                        },
+                                        "feudal": {
+                                            "description": "Do this."
+                                            "tasks": [
+                                                "Create 20 villagers.",
+                                                "Build 2 houses.",
+                                                "Lure and kill two boars."
+                                            ]
+                                        },
+                                        "castle": {
+                                            "description": "Do this."
+                                            "tasks": [
+                                                "Create 20 villagers.",
+                                                "Build 2 houses.",
+                                                "Lure and kill two boars."
+                                            ]
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Turtle",
+                    "image": "teutons-turtle.jpg",
+                    "video": "teutons-turtle.mp4",
+                    "description": "A Teutonic Turtle? Inconceivable!"
+                    "good-against": ["Amazonians", "Byzantines", "Incas"]
+                }
+            ]
+           "strengths": {
+               "economy": [
+                   {
+                        "name": "Efficient Villagers",
+                        "image": "teutons-efficient-villagers.jpg",
+                        "description": "These people brew and chug their own Red Bull."
+                   }
+               ],
+               "military": "stuff"
+           },
+           "weaknesses": {
+               "economy": [
+                   {
+                        "name": "Expensive Military",
+                        "image": "teutons-expensive-military.jpg",
+                        "description": "There's just never quite enough in the piggy bank..."
+                   }
+               ],
+               "military": "stuff"
+           }
+       }
+    }
+]
+
+
+# MAPS
+[
+    {
+        "name": "Gold Pit",
+        "icon": "gold_pit.png",
+        "model": "gold_pit.gbl",
+        "description": "I will sparkle like a wealthy woman's neck.",
+        "ranked": false,
+        "strong-civs": ["Teutons", "Incas"],
+        "weak-civs": ["Greeks", "Germans"],
+        "stats": {
+            "food": [
+                {
+                    "name": "sheep",
+                    "count": 12
+                },
+                {
+                    "name": "boar",
+                    "count": 6
+                },
+                {
+                    "name": "salmon",
+                    "count": 12
+                }
+            ],
+            "trees": {
+                "type": "sequoia",
+                "density": ".10"
+            },
+            "mining": {
+                "gold": {
+                    "count": 17,
+                    "clumps-of-3": 3,
+                    "clumps-of-4": 2
+                },
+                "stone": {
+                    "count": 19,
+                    "clumps-of-3": 1,
+                    "clumps-of-4": 4
+                }
+            },
+            "hazards": [
+                {
+                    "name": "lion",
+                    "count": 6
+                }
+            ]
+        }
+    }
+]
+
+# UNITS
+[
+    {
+        "name": "Villager",
+        "icon": "villager.png",
+        "description": "Every civilization has their slaves.",
+        "data": {
+            "gaia": false,
+            "land-travel": true,
+            "water-travel": false,
+            "strong-against": ["Camel","Ostrich"],
+            "weak-against": ["Teutonic Knights","Monkeys"],
+            "stats": {}
+        }
+    }
+]
