@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aoe2-coach"
+version = "0.1.0"
+description = "Age of Empires II: DE Real-Time Strategic & Tactical AI Coach"
+authors = [{ name = "AoE2 Coach Team" }]
+readme = "PROJECT_PLAN.md"
+requires-python = ">=3.11"
+dependencies = [
+    "aoe2rec-py>=0.1.20",
+    "mgz>=1.8.50",
+    "pydantic>=2.10.0",
+    "pyarrow>=18.0.0",
+    "duckdb>=1.1.0",
+    "fastapi>=0.115.0",
+    "requests>=2.31.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["aoe2_coach*"]
+
+[tool.pytest.ini_options]
+testpaths = ["aoe2_coach/tests"]
+python_files = ["test_*.py"]
