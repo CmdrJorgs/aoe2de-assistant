@@ -378,9 +378,9 @@ Phase 6: Integration, ELO Calibration & Launch   [Weeks 12-13]
 - [x] Export game snapshot vectors across time slices into Parquet format.
 
 ### Phase 2: Domain Rules & Counter-Matrix Engine (`Weeks 3–4`)
-- [ ] Encode complete AoE2:DE unit and tech tree graphs (all 45+ civs, bonuses, unique units).
-- [ ] Implement the AoE2 Armor Class & Damage Formula engine (Pierce, Melee, Bonus vs Cavalry, Archer, Infantry, Siege).
-- [ ] Build the real-time Villager Production-Balance Calculator (resource consumption vs gather rates).
+- [x] Encode complete AoE2:DE unit and tech tree graphs (all 45+ civs, bonuses, unique units).
+- [x] Implement the AoE2 Armor Class & Damage Formula engine (Pierce, Melee, Bonus vs Cavalry, Archer, Infantry, Siege).
+- [x] Build the real-time Villager Production-Balance Calculator (resource consumption vs gather rates).
 
 ### Phase 3: Machine Learning Model Development (`Weeks 5–7`)
 - [ ] Train Strategy Classifier (predicting winning unit compositions & buildings from partial states).
