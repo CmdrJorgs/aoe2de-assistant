@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0b0f17;
+  --foreground: #f1f5f9;
+  --card-bg: #111827;
+  --card-border: #1e293b;
+  --aoe-gold: #f59e0b;
+  --aoe-gold-light: #fde047;
+  --aoe-gold-dark: #b45309;
+  
+  --res-food: #ef4444;
+  --res-wood: #f59e0b;
+  --res-gold: #facc15;
+  --res-stone: #94a3b8;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  min-height: 100vh;
+  color-scheme: dark;
+}
+
+/* Custom RTS Glows and Accents */
+.gold-glow {
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.25);
+}
+
+.gold-glow-lg {
+  box-shadow: 0 0 35px rgba(245, 158, 11, 0.4);
+}
+
+.crimson-glow {
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.25);
+}
+
+.emerald-glow {
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.25);
+}
+
+/* Custom Scrollbar for RTS look */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0b0f17;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #f59e0b;
+}
+
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.02);
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

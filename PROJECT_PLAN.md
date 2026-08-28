@@ -195,7 +195,7 @@ To prevent ML hallucinations or recommending invalid game actions:
 While raw ML predictions provide numbers (e.g., `make_cavalry: 0.82`, `target_farms: 18`), new players need **reasoning, context, and clear instructions**.
 
 ### 4.1 Prompt Engineering & Dynamic Context Assembly
-The backend compiles the game state, ML probabilities, and rule results into a compact structured prompt sent to an ultra-fast LLM (e.g., Gemini 2.5 Flash / Flash Lite):
+The backend compiles the game state, ML probabilities, and rule results into a compact structured prompt sent to an OpenAI API compatible LLM endpoint (e.g., locally running llama.cpp server, Ollama, vLLM, or remote endpoints):
 
 ```json
 {
@@ -219,6 +219,32 @@ The backend compiles the game state, ML probabilities, and rule results into a c
 - **Beginner Tier (<1000 ELO)**: Focus on simple macro, basic counters, spending excess stockpiles, and avoiding common traps (e.g., "Don't float wood, build production buildings, don't get housed").
 - **Intermediate Tier (1000–1400 ELO)**: Adds strategic timing windows, upgrade priority, map control, and relic collection.
 - **Advanced Tier (>1400 ELO)**: Focuses on micro engagements, hill advantage, composition transitions, and military power spikes.
+
+### 4.3 Local LLM Inference & Coach Integration (CPU Mode)
+To run coaching explanations locally without consuming GPU compute required by *Age of Empires II*, the system uses a CPU-optimized `llama.cpp` instance running `Qwen3.8-4B-Distill-GGUF` (Q4_K_M):
+
+- **Binary & CPU Optimizations**: `llama.cpp` compiled natively with AVX-512, AVX2, and OpenMP multi-threading (16 threads). All GPU offloading is explicitly disabled (`--n-gpu-layers 0`) so AoE2 retains full GPU compute.
+- **Model**: `models/gguf/Qwen3.8-4B-Q4_K_M.gguf` (~2.6 GB, [Hugging Face](https://huggingface.co/empero-ai/Qwen3.8-4B-Distill-GGUF)).
+- **Server Startup Script**: [`scripts/start_llama_server.sh`](scripts/start_llama_server.sh) starts an OpenAI-compatible server at `http://127.0.0.1:8081/v1` (aliases: `qwen3.8-4b`, `llama3.2`).
+- **Interactive Chat Script**: [`scripts/chat_llama.sh`](scripts/chat_llama.sh) launches interactive terminal testing.
+
+#### Python Coach Integration Example
+```python
+from aoe2_coach.explanation.schemas import LLMConfig
+from aoe2_coach.explanation.client import OpenAIExplanationClient
+from aoe2_coach.explanation.engine import ExplanationEngine
+
+# Connect AoE2 Coach to the local CPU llama.cpp server
+config = LLMConfig(
+    base_url="http://localhost:8081/v1",
+    model="qwen3.8-4b",
+    api_key="llama.cpp",
+    temperature=0.2,
+    max_tokens=1200,
+)
+coach_client = OpenAIExplanationClient(config=config)
+engine = ExplanationEngine(config=config)
+```
 
 ---
 
@@ -312,8 +338,8 @@ The result is displayed as high-visibility tactical cards:
                             ▼
 +---------------------------------------------------------------------+
 | LLM TACTICAL EXPLANATION SERVICE                                    |
-| - Model: Gemini 2.5 Flash / Flash Lite (via Vertex AI / Google AI)   |
-| - Latency: <300ms streaming responses                               |
+| - Model: OpenAI API Compatible (llama.cpp / Ollama / vLLM / OpenAI) |
+| - Latency: Sub-second with deterministic instant fallback           |
 +---------------------------------------------------------------------+
 ```
 
@@ -383,21 +409,22 @@ Phase 6: Integration, ELO Calibration & Launch   [Weeks 12-13]
 - [x] Build the real-time Villager Production-Balance Calculator (resource consumption vs gather rates).
 
 ### Phase 3: Machine Learning Model Development (`Weeks 5–7`)
-- [ ] Train Strategy Classifier (predicting winning unit compositions & buildings from partial states).
-- [ ] Train Win Probability Estimator ($P(\text{Win} \mid s, a)$).
-- [ ] Train Economic Rebalancer model against high-ELO macro distributions.
-- [ ] Convert models to ONNX format for sub-20ms inference latency.
+- [x] Train Strategy Classifier (predicting winning unit compositions & buildings from partial states).
+- [x] Train Win Probability Estimator ($P(\text{Win} \mid s, a)$).
+- [x] Train Economic Rebalancer model against high-ELO macro distributions.
+- [x] Convert models to ONNX format for sub-20ms inference latency.
 
 ### Phase 4: LLM Explanation Engine (`Weeks 7–8`)
-- [ ] Develop structured JSON prompting pipeline for Gemini 2.5 Flash.
-- [ ] Implement ELO-tiered explanation filters (Beginner vs Intermediate vs Advanced advice).
-- [ ] Build hallucination verification: Ensure LLM explanations strictly match tech tree rules and ML candidate outputs.
+- [x] Setup local CPU inference via `llama.cpp` with Qwen3.8-4B-Distill-GGUF (Q4_K_M) & launch scripts (`scripts/start_llama_server.sh`, `scripts/chat_llama.sh`).
+- [x] Develop structured JSON prompting pipeline for OpenAI API compatible models (llama.cpp, Ollama, vLLM, OpenAI).
+- [x] Implement ELO-tiered explanation filters (Beginner vs Intermediate vs Advanced advice).
+- [x] Build hallucination verification: Ensure LLM explanations strictly match tech tree rules, counter matrices, and ML candidate outputs.
 
 ### Phase 5: Web Application Frontend & UX (`Weeks 9–11`)
-- [ ] Build Next.js 15 application with high-contrast RTS dark mode styling.
-- [ ] Implement 30-Second Match & Mid-game Wizard with unit/building visual icons.
-- [ ] Implement real-time voice-to-text / speech input option (e.g. player speaks: *"I see 5 Berserkers and I have 700 wood"*).
-- [ ] Build interactive Tactical Dashboard with actionable checklists and gatherer sliders.
+- [x] Build Next.js 15 application with high-contrast RTS dark mode styling.
+- [x] Implement 30-Second Match & Mid-game Wizard with unit/building visual icons.
+- [x] Implement real-time voice-to-text / speech input option (e.g. player speaks: *"I see 5 Berserkers and I have 700 wood"*).
+- [x] Build interactive Tactical Dashboard with actionable checklists and gatherer sliders.
 
 ### Phase 6: Testing, Calibration & Deployment (`Weeks 12–13`)
 - [ ] Benchmark recommendations against top-tier streamer / pro-player tournament matches.

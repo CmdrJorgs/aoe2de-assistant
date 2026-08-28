@@ -226,6 +226,9 @@ def calculate_damage_breakdown(
     )
 
 
+_DUEL_CACHE: Dict[Tuple[str, str, str, str, str, str, str], DuelSimulationResult] = {}
+
+
 def simulate_duel(
     unit1: UnitStats,
     unit2: UnitStats,
@@ -238,6 +241,18 @@ def simulate_duel(
     """
     Simulate a deterministic 1v1 duel between two units with given upgrades and civ modifiers.
     """
+    cache_key = (
+        unit1.id,
+        unit2.id,
+        ",".join(sorted(unit1_techs or [])),
+        ",".join(sorted(unit2_techs or [])),
+        (unit1_civ or "").lower(),
+        (unit2_civ or "").lower(),
+        elevation,
+    )
+    if cache_key in _DUEL_CACHE:
+        return _DUEL_CACHE[cache_key]
+
     u1 = apply_tech_and_civ_modifiers(unit1, unit1_techs, unit1_civ)
     u2 = apply_tech_and_civ_modifiers(unit2, unit2_techs, unit2_civ)
 
@@ -290,7 +305,7 @@ def simulate_duel(
     elif winner_id == u2.id:
         explanation_parts.append(f"{u2.name} defeats {u1.name} in {ttk_2}s.")
 
-    return DuelSimulationResult(
+    res = DuelSimulationResult(
         winner_id=winner_id,
         winner_name=winner_name,
         loser_id=loser_id,
@@ -318,3 +333,5 @@ def simulate_duel(
         is_soft_counter=is_soft_counter,
         explanation=" ".join(explanation_parts),
     )
+    _DUEL_CACHE[cache_key] = res
+    return res

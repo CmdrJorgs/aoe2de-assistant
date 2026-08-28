@@ -29,6 +29,7 @@ def test_metadata_store_upsert_and_query():
             player2_elo=1520,
             player2_civ="Vikings",
             winner_name="PlayerA",
+            file_id="sample_file_id_abc123",
             downloaded=False,
         )
 
@@ -37,14 +38,18 @@ def test_metadata_store_upsert_and_query():
         assert counts["total_indexed"] == 1
         assert counts["total_downloaded"] == 0
 
-        pending = store.get_pending_downloads(limit=10)
-        assert pending == [101]
+        pending_ids = store.get_pending_downloads(limit=10)
+        assert pending_ids == [101]
 
-        # Update to downloaded
-        match1.downloaded = True
-        match1.local_file_path = "/path/to/101.aoe2record"
-        store.upsert_match(match1)
+        pending_matches = store.get_pending_matches(limit=10)
+        assert len(pending_matches) == 1
+        assert pending_matches[0].match_id == 101
+        assert pending_matches[0].file_id == "sample_file_id_abc123"
+
+        # Update to downloaded via mark_downloaded
+        store.mark_downloaded(101, "/path/to/101.aoe2record")
 
         counts2 = store.count_matches()
         assert counts2["total_indexed"] == 1
         assert counts2["total_downloaded"] == 1
+        assert len(store.get_pending_matches()) == 0

@@ -1,4 +1,4 @@
-# Python
+# Python build artifacts
 __pycache__/
 *.py[cod]
 *$py.class
@@ -10,8 +10,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
 parts/
 sdist/
 var/
@@ -31,11 +29,26 @@ ENV/
 env.bak/
 venv.bak/
 
-# Data and Models
-data/raw/*.aoe2record
-data/processed/*.parquet
-data/metadata/*.db
-data/metadata/*.db-journal
+# Data and Large Models
+data/raw/
+data/processed/
+data/metadata/
+models/gguf/
+*.gguf
+*.joblib
+*.parquet
+*.db
+*.db-journal
+*.tar.gz
+*.zip
+
+# Frontend & Node
+node_modules/
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+*.tsbuildinfo
 
 # Testing & Cache
 .pytest_cache/

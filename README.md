@@ -225,16 +225,34 @@ aoe2-coach/
   - Complete 45+ civilization tech trees and unit stats
   - Multi-class damage formula with hill advantage and accuracy
   - Linear villager macro-economy solver
-- [ ] **Phase 3: Machine Learning Model Development**
-  - Win-rate and strategic action predictor models
-  - ELO-conditioned policy recommendations
-- [ ] **Phase 4: LLM Coaching & Explanation Layer**
-  - ELO-adaptive tactical coaching prompts
-  - Low-latency generation of strategic game plans
-- [ ] **Phase 5: Real-Time Web Application & Fast API**
-  - Sub-30-second mobile/desktop state entry UI
-  - Interactive counter-matrix visualizer and macro calculator
+- [x] **Phase 3: Machine Learning Model Development**
+  - Win-rate and strategic action predictor models (ONNX sub-20ms)
+  - Economic rebalancer and stance/timing classifiers
+- [x] **Phase 4: LLM Coaching & Explanation Layer**
+  - Local CPU llama.cpp inference with Qwen3.8-4B-Distill-GGUF
+  - ELO-adaptive verified coaching generation with deterministic fallback
+- [x] **Phase 5: Real-Time Web Application & FastAPI Gateway**
+  - Next.js 15 App with RTS high-contrast dark mode styling
+  - 30-Second Match & Mid-game Entry Wizard with visual icon pickers
+  - Real-time speech / voice-to-text input parsing
+  - Interactive Tactical Dashboard with gatherer redistribution & combat simulator
 - [ ] **Phase 6: ELO Calibration & Beta Testing**
+
+---
+
+### 🌐 Starting the Application
+
+#### 1. Start the FastAPI Backend Gateway
+```bash
+uv run python scripts/start_api_server.py --port 8000
+```
+
+#### 2. Start the Next.js Frontend
+```bash
+cd frontend
+npm run dev
+```
+Navigate to `http://localhost:3000` to use the AoE2 Coach Web Application.
 
 ---
 
