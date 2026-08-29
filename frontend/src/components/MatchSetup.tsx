@@ -3,19 +3,68 @@
 import React from "react";
 import { useCoachStore } from "@/lib/store";
 import { AgeNumber } from "@/types/coach";
-import { Shield, Crosshair, Crown, Clock, Award } from "lucide-react";
+import { getCivEmblemUrl, getAgeIconUrl } from "@/lib/assetDb";
+import { User, Crosshair, Award, Clock, Shield } from "lucide-react";
 
-const AGES: { id: AgeNumber; name: string; icon: string }[] = [
-  { id: 1, name: "Dark Age", icon: "🛖" },
-  { id: 2, name: "Feudal Age", icon: "🏹" },
-  { id: 3, name: "Castle Age", icon: "🏰" },
-  { id: 4, name: "Imperial Age", icon: "👑" },
+const AGES: { id: AgeNumber; name: string }[] = [
+  { id: 1, name: "Dark Age" },
+  { id: 2, name: "Feudal Age" },
+  { id: 3, name: "Castle Age" },
+  { id: 4, name: "Imperial Age" },
 ];
 
-const ELO_PRESETS = [800, 1000, 1200, 1400, 1600, 1800];
+const DEFAULT_CIVS = [
+  "Franks",
+  "Vikings",
+  "Britons",
+  "Goths",
+  "Teutons",
+  "Mongols",
+  "Mayans",
+  "Aztecs",
+  "Chinese",
+  "Japanese",
+  "Byzantines",
+  "Huns",
+  "Spanish",
+  "Saracens",
+  "Turks",
+  "Persians",
+  "Celts",
+  "Italians",
+  "Magyars",
+  "Berbers",
+  "Ethiopians",
+  "Malians",
+  "Portuguese",
+  "Burmese",
+  "Khmer",
+  "Malay",
+  "Vietnamese",
+  "Bulgarians",
+  "Cumans",
+  "Lithuanians",
+  "Tatars",
+  "Burgundians",
+  "Sicilians",
+  "Bohemians",
+  "Poles",
+  "Bengalis",
+  "Dravidians",
+  "Gurjaras",
+  "Hindustanis",
+  "Romans",
+  "Armenians",
+  "Georgians",
+];
 
 export const MatchSetup: React.FC = () => {
   const { snapshot, updateSnapshot, civs } = useCoachStore();
+
+  const civList =
+    civs.length > 0
+      ? civs.map((c) => c.name).sort((a, b) => a.localeCompare(b))
+      : DEFAULT_CIVS.sort((a, b) => a.localeCompare(b));
 
   const handleCivChange = (type: "player" | "opponent", civName: string) => {
     if (type === "player") updateSnapshot({ player_civ: civName });
@@ -30,93 +79,104 @@ export const MatchSetup: React.FC = () => {
     updateSnapshot({ player_elo: Math.max(400, Math.min(3000, elo)) });
   };
 
+  const minutes = Math.floor(snapshot.game_time_minutes);
+  const seconds = Math.round((snapshot.game_time_minutes % 1) * 60);
+  const formattedTime = `${minutes}:${String(seconds).padStart(2, "0")}`;
+
+  const playerEmblem = getCivEmblemUrl(snapshot.player_civ);
+  const opponentEmblem = getCivEmblemUrl(snapshot.opponent_civ);
+
   return (
-    <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 sm:p-5 shadow-xl">
-      <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-800/80">
-        <div className="flex items-center gap-2">
-          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 font-bold text-xs border border-amber-500/30">
+    <section className="bg-surface-container parchment-panel p-5 sm:p-6 rounded-lg">
+      {/* Section Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-gold-leaf text-on-primary flex items-center justify-center font-headline-md text-sm border border-surface-tint shrink-0">
             1
-          </span>
-          <h2 className="text-sm font-semibold text-slate-200 tracking-wide uppercase">
+          </div>
+          <h2 className="font-headline-lg text-lg sm:text-2xl text-primary uppercase tracking-wide font-bold">
             Match Context & Setup
           </h2>
         </div>
-        <span className="text-[11px] text-slate-400 font-mono">
+        <div className="font-label-tactical text-xs sm:text-sm text-on-surface-variant bg-surface-variant px-3 py-1 border border-outline-variant rounded">
           {snapshot.player_civ} vs {snapshot.opponent_civ}
-        </span>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Player Civ */}
-        <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1.5 flex items-center gap-1.5">
-            <Crown className="w-3.5 h-3.5 text-amber-400" />
+      {/* Grid Inputs */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6 mb-6">
+        {/* 1. Your Civilization */}
+        <div className="space-y-2">
+          <label className="flex items-center gap-1.5 font-label-tactical text-xs text-on-surface font-semibold">
+            <User className="w-3.5 h-3.5 text-gold-leaf" />
             <span>Your Civilization</span>
           </label>
-          <div className="relative">
+          <div className="input-sunken bg-surface flex items-center gap-2 px-3 py-2 rounded h-11">
+            <img
+              src={playerEmblem}
+              alt={snapshot.player_civ}
+              className="w-6 h-6 object-contain rounded-sm shrink-0 border border-outline-variant bg-surface-variant"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src =
+                  "/aoe2_assets/icons/age-3.png";
+              }}
+            />
             <select
               value={snapshot.player_civ}
               onChange={(e) => handleCivChange("player", e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700/80 rounded-lg px-3 py-2 text-sm text-amber-300 font-medium focus:ring-1 focus:ring-amber-500 focus:border-amber-500 outline-none cursor-pointer"
+              className="flex-1 bg-transparent text-primary font-body-md text-sm focus:outline-none cursor-pointer"
             >
-              {civs.length > 0 ? (
-                civs.map((c) => (
-                  <option key={c.id} value={c.name} className="bg-slate-950 text-slate-200">
-                    {c.name}
-                  </option>
-                ))
-              ) : (
-                ["Franks", "Britons", "Vikings", "Goths", "Teutons", "Mongols", "Mayans", "Aztecs"].map((c) => (
-                  <option key={c} value={c} className="bg-slate-950 text-slate-200">
-                    {c}
-                  </option>
-                ))
-              )}
+              {civList.map((c) => (
+                <option key={c} value={c} className="bg-surface text-primary">
+                  {c}
+                </option>
+              ))}
             </select>
           </div>
         </div>
 
-        {/* Opponent Civ */}
-        <div>
-          <label className="block text-xs font-medium text-slate-400 mb-1.5 flex items-center gap-1.5">
-            <Crosshair className="w-3.5 h-3.5 text-rose-400" />
+        {/* 2. Opponent Civilization */}
+        <div className="space-y-2">
+          <label className="flex items-center gap-1.5 font-label-tactical text-xs text-on-surface font-semibold">
+            <Crosshair className="w-3.5 h-3.5 text-secondary" />
             <span>Opponent Civilization</span>
           </label>
-          <div className="relative">
+          <div className="input-sunken bg-surface flex items-center gap-2 px-3 py-2 rounded h-11">
+            <img
+              src={opponentEmblem}
+              alt={snapshot.opponent_civ}
+              className="w-6 h-6 object-contain rounded-sm shrink-0 border border-outline-variant bg-surface-variant"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src =
+                  "/aoe2_assets/icons/age-3.png";
+              }}
+            />
             <select
               value={snapshot.opponent_civ}
               onChange={(e) => handleCivChange("opponent", e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700/80 rounded-lg px-3 py-2 text-sm text-rose-300 font-medium focus:ring-1 focus:ring-rose-500 focus:border-rose-500 outline-none cursor-pointer"
+              className="flex-1 bg-transparent text-primary font-body-md text-sm focus:outline-none cursor-pointer"
             >
-              {civs.length > 0 ? (
-                civs.map((c) => (
-                  <option key={c.id} value={c.name} className="bg-slate-950 text-slate-200">
-                    {c.name}
-                  </option>
-                ))
-              ) : (
-                ["Vikings", "Franks", "Britons", "Goths", "Teutons", "Mongols", "Mayans", "Aztecs"].map((c) => (
-                  <option key={c} value={c} className="bg-slate-950 text-slate-200">
-                    {c}
-                  </option>
-                ))
-              )}
+              {civList.map((c) => (
+                <option key={c} value={c} className="bg-surface text-primary">
+                  {c}
+                </option>
+              ))}
             </select>
           </div>
         </div>
 
-        {/* Player ELO */}
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <label className="text-xs font-medium text-slate-400 flex items-center gap-1.5">
-              <Award className="w-3.5 h-3.5 text-yellow-400" />
+        {/* 3. Player ELO */}
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <label className="flex items-center gap-1.5 font-label-tactical text-xs text-on-surface font-semibold">
+              <Award className="w-3.5 h-3.5 text-gold-leaf" />
               <span>Player ELO</span>
             </label>
-            <span className="text-xs font-bold text-amber-400 font-mono">
+            <span className="font-label-tactical text-gold-leaf font-bold text-xs">
               {snapshot.player_elo}
             </span>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex gap-1.5 h-11">
             <input
               type="number"
               min={400}
@@ -124,18 +184,18 @@ export const MatchSetup: React.FC = () => {
               step={25}
               value={snapshot.player_elo}
               onChange={(e) => handleEloChange(parseInt(e.target.value) || 1000)}
-              className="w-20 bg-slate-950 border border-slate-700/80 rounded-lg px-2 py-1.5 text-xs text-slate-200 font-mono text-center focus:ring-1 focus:ring-amber-500 outline-none"
+              className="input-sunken bg-surface px-3 py-2 rounded flex-1 font-label-tactical text-sm text-primary font-bold text-center focus:outline-none"
             />
-            <div className="flex gap-1 flex-1 overflow-x-auto">
-              {ELO_PRESETS.map((elo) => (
+            <div className="flex gap-1">
+              {[800, 1200, 1600].map((elo) => (
                 <button
                   key={elo}
                   type="button"
                   onClick={() => handleEloChange(elo)}
-                  className={`px-1.5 py-1 text-[10px] font-mono rounded transition-colors ${
+                  className={`px-2 py-1 text-[11px] font-label-tactical rounded border transition-colors ${
                     snapshot.player_elo === elo
-                      ? "bg-amber-500 text-slate-950 font-bold"
-                      : "bg-slate-800 hover:bg-slate-700 text-slate-300"
+                      ? "bg-gold-leaf text-on-primary border-gold-leaf font-bold"
+                      : "bg-surface-variant text-on-surface-variant border-outline-variant hover:bg-outline-variant"
                   }`}
                 >
                   {elo}
@@ -145,39 +205,48 @@ export const MatchSetup: React.FC = () => {
           </div>
         </div>
 
-        {/* Game Time */}
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <label className="text-xs font-medium text-slate-400 flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-cyan-400" />
+        {/* 4. Game Time */}
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <label className="flex items-center gap-1.5 font-label-tactical text-xs text-on-surface font-semibold">
+              <Clock className="w-3.5 h-3.5 text-tertiary" />
               <span>Game Time</span>
             </label>
-            <span className="text-xs font-bold text-cyan-300 font-mono">
-              {Math.floor(snapshot.game_time_minutes)}:
-              {String(Math.round((snapshot.game_time_minutes % 1) * 60)).padStart(2, "0")}
+            <span className="font-label-tactical text-tertiary font-bold text-xs">
+              {formattedTime}
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 h-11">
             <input
               type="range"
               min={1}
               max={60}
               step={0.5}
               value={snapshot.game_time_minutes}
-              onChange={(e) => updateSnapshot({ game_time_minutes: parseFloat(e.target.value) })}
-              className="w-full h-2 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+              onChange={(e) =>
+                updateSnapshot({ game_time_minutes: parseFloat(e.target.value) })
+              }
+              className="w-full accent-tertiary h-2 bg-outline-variant rounded-full appearance-none cursor-pointer"
             />
             <button
               type="button"
-              onClick={() => updateSnapshot({ game_time_minutes: Math.max(1, snapshot.game_time_minutes - 1) })}
-              className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded"
+              onClick={() =>
+                updateSnapshot({
+                  game_time_minutes: Math.max(1, snapshot.game_time_minutes - 1),
+                })
+              }
+              className="bg-surface-variant text-on-surface-variant border border-outline-variant text-xs px-2 py-1.5 rounded-sm hover:bg-outline-variant cursor-pointer shrink-0 font-label-tactical"
             >
               -1m
             </button>
             <button
               type="button"
-              onClick={() => updateSnapshot({ game_time_minutes: snapshot.game_time_minutes + 1 })}
-              className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded"
+              onClick={() =>
+                updateSnapshot({
+                  game_time_minutes: snapshot.game_time_minutes + 1,
+                })
+              }
+              className="bg-surface-variant text-on-surface-variant border border-outline-variant text-xs px-2 py-1.5 rounded-sm hover:bg-outline-variant cursor-pointer shrink-0 font-label-tactical"
             >
               +1m
             </button>
@@ -185,33 +254,41 @@ export const MatchSetup: React.FC = () => {
         </div>
       </div>
 
-      {/* Age Selector Tabs */}
-      <div className="mt-4 pt-3 border-t border-slate-800/60">
-        <label className="block text-xs font-medium text-slate-400 mb-2 flex items-center gap-1.5">
-          <Shield className="w-3.5 h-3.5 text-amber-400" />
+      <div className="hr-decorative mb-5"></div>
+
+      {/* Current Game Age */}
+      <div className="space-y-2.5">
+        <label className="flex items-center gap-1.5 font-label-tactical text-xs text-on-surface font-semibold">
+          <Shield className="w-3.5 h-3.5 text-primary" />
           <span>Current Game Age</span>
         </label>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          {AGES.map((a) => {
-            const isSelected = snapshot.current_age === a.id;
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full rounded-lg overflow-hidden border border-outline-variant shadow-sm bg-surface p-1.5">
+          {AGES.map((age) => {
+            const isSelected = snapshot.current_age === age.id;
+            const ageIcon = getAgeIconUrl(age.id);
+
             return (
               <button
-                key={a.id}
+                key={age.id}
                 type="button"
-                onClick={() => handleAgeChange(a.id)}
-                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg border text-xs font-semibold transition-all ${
+                onClick={() => handleAgeChange(age.id)}
+                className={`py-2.5 px-3 flex items-center justify-center gap-2.5 font-body-md text-xs sm:text-sm rounded transition-all cursor-pointer ${
                   isSelected
-                    ? "bg-amber-500/15 border-amber-500 text-amber-300 shadow-sm shadow-amber-500/20"
-                    : "bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200"
+                    ? "bg-parchment-deep text-primary font-bold border border-gold-leaf shadow-sm"
+                    : "bg-surface text-on-surface-variant hover:bg-surface-variant border border-transparent"
                 }`}
               >
-                <span className="text-base">{a.icon}</span>
-                <span>{a.name}</span>
+                <img
+                  src={ageIcon}
+                  alt={age.name}
+                  className="w-5 h-5 sm:w-6 sm:h-6 object-contain shrink-0"
+                />
+                <span className="truncate">{age.name}</span>
               </button>
             );
           })}
         </div>
       </div>
-    </div>
+    </section>
   );
 };

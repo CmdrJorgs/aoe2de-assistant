@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aoe2-coach-config
+  namespace: aoe2-coach
+data:
+  PORT: "8000"
+  HOST: "0.0.0.0"
+  WORKERS: "4"
+  LOG_LEVEL: "info"
+  LLM_BASE_URL: "http://127.0.0.1:8081/v1"
+  LLM_MODEL: "qwen3.8-4b"
+  LLM_TIMEOUT_SECONDS: "4.0"
+  NEXT_PUBLIC_API_URL: "/api"
+  NODE_ENV: "production"

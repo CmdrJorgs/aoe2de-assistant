@@ -427,9 +427,9 @@ Phase 6: Integration, ELO Calibration & Launch   [Weeks 12-13]
 - [x] Build interactive Tactical Dashboard with actionable checklists and gatherer sliders.
 
 ### Phase 6: Testing, Calibration & Deployment (`Weeks 12–13`)
-- [ ] Benchmark recommendations against top-tier streamer / pro-player tournament matches.
-- [ ] Conduct user testing with 800–1200 ELO beginner players during live matches.
-- [ ] Deploy backend on containerized Kubernetes/Cloud Run and frontend on Vercel/Cloudflare CDN.
+- [x] Benchmark recommendations against top-tier streamer / pro-player tournament matches (`aoe2_coach/benchmarks/pro_datasets.py`, `aoe2_coach/benchmarks/benchmark_engine.py`, `scripts/benchmark_pro_matches.py`).
+- [x] Conduct user testing with 800–1200 ELO beginner players during live matches (`aoe2_coach/benchmarks/user_testing_calibration.py`, `scripts/run_user_testing_simulation.py`).
+- [x] Deploy backend on containerized Kubernetes/Cloud Run and frontend on Vercel/Cloudflare CDN (`Dockerfile`, `docker-compose.yml`, `docker-compose.prod.yml`, `k8s/`, `deploy/cloudrun/`, `frontend/Dockerfile`, `frontend/vercel.json`, `frontend/wrangler.toml`, `DEPLOYMENT.md`).
 
 ---
 

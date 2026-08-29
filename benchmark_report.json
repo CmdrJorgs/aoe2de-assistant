@@ -1,0 +1,519 @@
+{
+  "timestamp": "2026-08-28T20:22:50Z",
+  "summary": {
+    "total_scenarios": 15,
+    "top1_accuracy_pct": 86.67,
+    "top3_recall_pct": 93.33,
+    "building_accuracy_pct": 86.67,
+    "stance_agreement_pct": 86.67,
+    "counter_validity_pct": 100.0,
+    "mean_eco_mae_vills": 2.31,
+    "ml_latency": {
+      "mean_ms": 0.45,
+      "p50_ms": 0.34,
+      "p90_ms": 0.65,
+      "p95_ms": 1.28,
+      "p99_ms": 1.89,
+      "max_ms": 2.14,
+      "sub_20ms_pass": true
+    },
+    "total_latency": {
+      "mean_ms": 0.48,
+      "p50_ms": 0.37,
+      "p90_ms": 0.72,
+      "p95_ms": 1.36,
+      "p99_ms": 1.95,
+      "max_ms": 2.19,
+      "sub_20ms_pass": true
+    },
+    "feudal_top1_acc_pct": 100.0,
+    "castle_top1_acc_pct": 90.91,
+    "imperial_top1_acc_pct": 50.0,
+    "all_slas_passed": true
+  },
+  "scenario_evaluations": [
+    {
+      "scenario_id": "pro-hcv-01-franks-britons",
+      "matchup": "Hera (Franks) vs TheViper (Britons)",
+      "player_civ": "Franks",
+      "opponent_civ": "Britons",
+      "game_age": 3,
+      "top1_match": true,
+      "top3_match": true,
+      "building_match": true,
+      "stance_match": true,
+      "counter_valid": true,
+      "recommended_comp": "knight_line",
+      "top3_rankings": [
+        "knight_line",
+        "skirm_line",
+        "siege_line"
+      ],
+      "expected_comps": [
+        "knight_line",
+        "skirm_line"
+      ],
+      "recommended_building": "stable",
+      "expected_building": "stable",
+      "recommended_stance": "FORWARD_PRESSURE",
+      "expected_stance": "FORWARD_PRESSURE",
+      "eco_allocation_mae": 1.6666666666666667,
+      "inference_latency_ms": 0.3,
+      "explanation_latency_ms": 0.03,
+      "total_latency_ms": 0.33,
+      "strategic_summary": "Recommended: Knight Line (21.3% confidence) from Stable. Heavy cavalry mobility and shock DPS. Overwhelms archers and unfortified positions."
+    },
+    {
+      "scenario_id": "pro-kotd5-02-mayans-huns",
+      "matchup": "Tatoh (Mayans) vs Liereyy (Huns)",
+      "player_civ": "Mayans",
+      "opponent_civ": "Huns",
+      "game_age": 2,
+      "top1_match": true,
+      "top3_match": true,
+      "building_match": true,
+      "stance_match": true,
+      "counter_valid": true,
+      "recommended_comp": "pike_line",
+      "top3_rankings": [
+        "pike_line",
+        "champion_line",
+        "skirm_line"
+      ],
+      "expected_comps": [
+        "crossbow_line",
+        "skirm_line",
+        "pike_line"
+      ],
+      "recommended_building": "barracks",
+      "expected_building": "archery_range",
+      "recommended_stance": "FORWARD_PRESSURE",
+      "expected_stance": "FORWARD_PRESSURE",
+      "eco_allocation_mae": 2.0,
+      "inference_latency_ms": 0.38,
+      "explanation_latency_ms": 0.04,
+      "total_latency_ms": 0.42,
+      "strategic_summary": "Recommended: Pike Line (46.2% confidence) from Barracks. Cost-efficient anti-cavalry defense. Hard counters heavy cavalry and raiding."
+    },
+    {
+      "scenario_id": "pro-warlords2-03-aztecs-franks",
+      "matchup": "Jordan (Aztecs) vs Yo (Franks)",
+      "player_civ": "Aztecs",
+      "opponent_civ": "Franks",
+      "game_age": 3,
+      "top1_match": true,
+      "top3_match": true,
+      "building_match": true,
+      "stance_match": true,
+      "counter_valid": true,
+      "recommended_comp": "pike_line",
+      "top3_rankings": [
+        "pike_line",
+        "monk_line",
+        "champion_line"
+      ],
+      "expected_comps": [
+        "monk_line",
+        "pike_line",
+        "unique_unit_line"
+      ],
+      "recommended_building": "barracks",
+      "expected_building": "monastery",
+      "recommended_stance": "DEFENSIVE_TURTLING",
+      "expected_stance": "DEFENSIVE_TURTLING",
+      "eco_allocation_mae": 3.3333333333333335,
+      "inference_latency_ms": 0.24,
+      "explanation_latency_ms": 0.03,
+      "total_latency_ms": 0.27,
+      "strategic_summary": "Recommended: Pike Line (46.1% confidence) from Barracks. Cost-efficient anti-cavalry defense. Hard counters heavy cavalry and raiding."
+    },
+    {
+      "scenario_id": "pro-rbw-04-byz-goths",
+      "matchup": "TheViper (Byzantines) vs Daut (Goths)",
+      "player_civ": "Byzantines",
+      "opponent_civ": "Goths",
+      "game_age": 4,
+      "top1_match": true,
+      "top3_match": true,
+      "building_match": true,
+      "stance_match": true,
+      "counter_valid": true,
+      "recommended_comp": "unique_unit_line",
+      "top3_rankings": [
+        "unique_unit_line",
+        "knight_line",
+        "pike_line"
+      ],
+      "expected_comps": [
+        "unique_unit_line",
+        "champion_line"
+      ],
+      "recommended_building": "castle",
+      "expected_building": "castle",
+      "recommended_stance": "ALL_IN_AGGRESSION",
+      "expected_stance": "ALL_IN_AGGRESSION",
+      "eco_allocation_mae": 1.3333333333333333,
+      "inference_latency_ms": 0.35,
+      "explanation_latency_ms": 0.03,
+      "total_latency_ms": 0.38,
+      "strategic_summary": "Recommended: Unique Unit Line (37.7% confidence) from Castle. Leverage civilization unique unit power spike and civilization-defining bonuses."
+    },
+    {
+      "scenario_id": "pro-kotd5-05-turks-bohemians",
+      "matchup": "Capoch (Turks) vs Villese (Bohemians)",
+      "player_civ": "Turks",
+      "opponent_civ": "Bohemians",
+      "game_age": 3,
+      "top1_match": false,
+      "top3_match": false,
+      "building_match": false,
+      "stance_match": true,
+      "counter_valid": true,
+      "recommended_comp": "champion_line",
+      "top3_rankings": [
+        "champion_line",
+        "crossbow_line",
+        "knight_line"
+      ],
+      "expected_comps": [
+        "unique_unit_line",
+        "siege_line"
+      ],
+      "recommended_building": "barracks",
+      "expected_building": "castle",
+      "recommended_stance": "ALL_IN_AGGRESSION",
+      "expected_stance": "ALL_IN_AGGRESSION",
+      "eco_allocation_mae": 3.3333333333333335,
+      "inference_latency_ms": 0.48,
+      "explanation_latency_ms": 0.04,
+      "total_latency_ms": 0.52,
+      "strategic_summary": "Recommended: Champion Line (25.2% confidence) from Barracks. High melee damage swarm to shred trash units, skirmishers, eagles, and buildings."
+    },
+    {
+      "scenario_id": "pro-warlords3-06-mongols-vikings",
+      "matchup": "Hera (Mongols) vs Tatoh (Vikings)",
+      "player_civ": "Mongols",
+      "opponent_civ": "Vikings",
+      "game_age": 2,
+      "top1_match": true,
+      "top3_match": true,
+      "building_match": true,
+      "stance_match": true,
+      "counter_valid": true,
+      "recommended_comp": "scout_line",
+      "top3_rankings": [
+        "scout_line",
+        "champion_line",
+        "skirm_line"
+      ],
+      "expected_comps": [
+        "scout_line",
+        "skirm_line",
+        "unique_unit_line"
+      ],
+      "recommended_building": "stable",
+      "expected_building": "stable",
+      "recommended_stance": "FORWARD_PRESSURE",
+      "expected_stance": "FORWARD_PRESSURE",
+      "eco_allocation_mae": 0.6666666666666666,
+      "inference_latency_ms": 0.58,
+      "explanation_latency_ms": 0.04,
+      "total_latency_ms": 0.62,
+      "strategic_summary": "Recommended: Scout Line (22.3% confidence) from Stable. Food-only trash raiding force with conversion resistance against monks and backline eco."
+    },
+    {
+      "scenario_id": "pro-hcv-07-chinese-franks",
+      "matchup": "Mr_Yo (Chinese) vs Jordan (Franks)",
+      "player_civ": "Chinese",
+      "opponent_civ": "Franks",
+      "game_age": 3,
+      "top1_match": true,
+      "top3_match": true,
+      "building_match": true,
+      "stance_match": true,
+      "counter_valid": true,
+      "recommended_comp": "pike_line",
+      "top3_rankings": [
+        "pike_line",
+        "camel_line",
+        "monk_line"
+      ],
+      "expected_comps": [
+        "camel_line",
+        "unique_unit_line",
+        "pike_line"
+      ],
+      "recommended_building": "barracks",
+      "expected_building": "stable",
+      "recommended_stance": "FORWARD_PRESSURE",
+      "expected_stance": "FORWARD_PRESSURE",
+      "eco_allocation_mae": 2.3333333333333335,
+      "inference_latency_ms": 0.27,
+      "explanation_latency_ms": 0.03,
+      "total_latency_ms": 0.29,
+      "strategic_summary": "Recommended: Pike Line (27.0% confidence) from Barracks. Cost-efficient anti-cavalry defense. Hard counters heavy cavalry and raiding."
+    },
+    {
+      "scenario_id": "pro-rbw-08-ethiopians-britons",
+      "matchup": "Liereyy (Ethiopians) vs Villese (Britons)",
+      "player_civ": "Ethiopians",
+      "opponent_civ": "Britons",
+      "game_age": 3,
+      "top1_match": true,
+      "top3_match": true,
+      "building_match": true,
+      "stance_match": true,
+      "counter_valid": true,
+      "recommended_comp": "skirm_line",
+      "top3_rankings": [
+        "skirm_line",
+        "siege_line",
+        "knight_line"
+      ],
+      "expected_comps": [
+        "crossbow_line",
+        "siege_line",
+        "skirm_line"
+      ],
+      "recommended_building": "archery_range",
+      "expected_building": "archery_range",
+      "recommended_stance": "FORWARD_PRESSURE",
+      "expected_stance": "RELIC_HILL_CONTROL",
+      "eco_allocation_mae": 4.333333333333333,
+      "inference_latency_ms": 0.32,
+      "explanation_latency_ms": 0.03,
+      "total_latency_ms": 0.34,
+      "strategic_summary": "Recommended: Skirm Line (19.8% confidence) from Archery Range. High pierce armor trash counter against massed archers and crossbows."
+    },
+    {
+      "scenario_id": "pro-kotd4-09-poles-hindustanis",
+      "matchup": "Daut (Poles) vs Hera (Hindustanis)",
+      "player_civ": "Poles",
+      "opponent_civ": "Hindustanis",
+      "game_age": 3,
+      "top1_match": true,
+      "top3_match": true,
+      "building_match": true,
+      "stance_match": false,
+      "counter_valid": true,
+      "recommended_comp": "pike_line",
+      "top3_rankings": [
+        "pike_line",
+        "monk_line",
+        "unique_unit_line"
+      ],
+      "expected_comps": [
+        "knight_line",
+        "pike_line",
+        "monk_line"
+      ],
+      "recommended_building": "barracks",
+      "expected_building": "stable",
+      "recommended_stance": "FORWARD_PRESSURE",
+      "expected_stance": "DEFENSIVE_TURTLING",
+      "eco_allocation_mae": 1.6666666666666667,
+      "inference_latency_ms": 0.27,
+      "explanation_latency_ms": 0.03,
+      "total_latency_ms": 0.3,
+      "strategic_summary": "Recommended: Pike Line (27.8% confidence) from Barracks. Cost-efficient anti-cavalry defense. Hard counters heavy cavalry and raiding."
+    },
+    {
+      "scenario_id": "pro-hc4-10-romans-goths",
+      "matchup": "TheViper (Romans) vs Mr_Yo (Goths)",
+      "player_civ": "Romans",
+      "opponent_civ": "Goths",
+      "game_age": 4,
+      "top1_match": false,
+      "top3_match": true,
+      "building_match": false,
+      "stance_match": true,
+      "counter_valid": true,
+      "recommended_comp": "knight_line",
+      "top3_rankings": [
+        "knight_line",
+        "unique_unit_line",
+        "champion_line"
+      ],
+      "expected_comps": [
+        "champion_line",
+        "siege_line",
+        "unique_unit_line"
+      ],
+      "recommended_building": "stable",
+      "expected_building": "barracks",
+      "recommended_stance": "ALL_IN_AGGRESSION",
+      "expected_stance": "ALL_IN_AGGRESSION",
+      "eco_allocation_mae": 4.0,
+      "inference_latency_ms": 0.33,
+      "explanation_latency_ms": 0.03,
+      "total_latency_ms": 0.36,
+      "strategic_summary": "Recommended: Knight Line (32.8% confidence) from Stable. Heavy cavalry mobility and shock DPS. Overwhelms archers and unfortified positions."
+    },
+    {
+      "scenario_id": "pro-rbw5-11-lith-franks",
+      "matchup": "Hera (Lithuanians) vs Liereyy (Franks)",
+      "player_civ": "Lithuanians",
+      "opponent_civ": "Franks",
+      "game_age": 3,
+      "top1_match": true,
+      "top3_match": true,
+      "building_match": true,
+      "stance_match": false,
+      "counter_valid": true,
+      "recommended_comp": "monk_line",
+      "top3_rankings": [
+        "monk_line",
+        "pike_line",
+        "unique_unit_line"
+      ],
+      "expected_comps": [
+        "unique_unit_line",
+        "knight_line",
+        "monk_line"
+      ],
+      "recommended_building": "monastery",
+      "expected_building": "castle",
+      "recommended_stance": "DEFENSIVE_TURTLING",
+      "expected_stance": "FORWARD_PRESSURE",
+      "eco_allocation_mae": 2.0,
+      "inference_latency_ms": 0.28,
+      "explanation_latency_ms": 0.03,
+      "total_latency_ms": 0.31,
+      "strategic_summary": "Recommended: Monk Line (24.5% confidence) from Monastery. High-value conversion support against expensive cavalry, knights, and siege."
+    },
+    {
+      "scenario_id": "pro-kotd5-12-gurjaras-mayans",
+      "matchup": "Tatoh (Gurjaras) vs Jordan (Mayans)",
+      "player_civ": "Gurjaras",
+      "opponent_civ": "Mayans",
+      "game_age": 3,
+      "top1_match": true,
+      "top3_match": true,
+      "building_match": true,
+      "stance_match": true,
+      "counter_valid": true,
+      "recommended_comp": "unique_unit_line",
+      "top3_rankings": [
+        "unique_unit_line",
+        "skirm_line",
+        "siege_line"
+      ],
+      "expected_comps": [
+        "unique_unit_line",
+        "camel_line",
+        "knight_line"
+      ],
+      "recommended_building": "stable",
+      "expected_building": "stable",
+      "recommended_stance": "FORWARD_PRESSURE",
+      "expected_stance": "FORWARD_PRESSURE",
+      "eco_allocation_mae": 2.0,
+      "inference_latency_ms": 0.37,
+      "explanation_latency_ms": 0.03,
+      "total_latency_ms": 0.4,
+      "strategic_summary": "Recommended: Unique Unit Line (23.9% confidence) from Stable. Leverage civilization unique unit power spike and civilization-defining bonuses."
+    },
+    {
+      "scenario_id": "pro-warlords2-13-khmer-byz",
+      "matchup": "Capoch (Khmer) vs Daut (Byzantines)",
+      "player_civ": "Khmer",
+      "opponent_civ": "Byzantines",
+      "game_age": 3,
+      "top1_match": true,
+      "top3_match": true,
+      "building_match": true,
+      "stance_match": true,
+      "counter_valid": true,
+      "recommended_comp": "knight_line",
+      "top3_rankings": [
+        "knight_line",
+        "champion_line",
+        "crossbow_line"
+      ],
+      "expected_comps": [
+        "siege_line",
+        "knight_line",
+        "unique_unit_line"
+      ],
+      "recommended_building": "stable",
+      "expected_building": "siege_workshop",
+      "recommended_stance": "FORWARD_PRESSURE",
+      "expected_stance": "FORWARD_PRESSURE",
+      "eco_allocation_mae": 2.3333333333333335,
+      "inference_latency_ms": 0.34,
+      "explanation_latency_ms": 0.03,
+      "total_latency_ms": 0.37,
+      "strategic_summary": "Recommended: Knight Line (28.0% confidence) from Stable. Heavy cavalry mobility and shock DPS. Overwhelms archers and unfortified positions."
+    },
+    {
+      "scenario_id": "pro-hcv-14-burgundians-britons",
+      "matchup": "Yo (Burgundians) vs TheViper (Britons)",
+      "player_civ": "Burgundians",
+      "opponent_civ": "Britons",
+      "game_age": 3,
+      "top1_match": true,
+      "top3_match": true,
+      "building_match": true,
+      "stance_match": true,
+      "counter_valid": true,
+      "recommended_comp": "knight_line",
+      "top3_rankings": [
+        "knight_line",
+        "skirm_line",
+        "unique_unit_line"
+      ],
+      "expected_comps": [
+        "knight_line",
+        "skirm_line"
+      ],
+      "recommended_building": "stable",
+      "expected_building": "stable",
+      "recommended_stance": "FORWARD_PRESSURE",
+      "expected_stance": "ALL_IN_AGGRESSION",
+      "eco_allocation_mae": 1.0,
+      "inference_latency_ms": 0.33,
+      "explanation_latency_ms": 0.03,
+      "total_latency_ms": 0.36,
+      "strategic_summary": "Recommended: Knight Line (24.1% confidence) from Stable. Heavy cavalry mobility and shock DPS. Overwhelms archers and unfortified positions."
+    },
+    {
+      "scenario_id": "pro-kotd5-15-saracens-franks",
+      "matchup": "Liereyy (Saracens) vs Hera (Franks)",
+      "player_civ": "Saracens",
+      "opponent_civ": "Franks",
+      "game_age": 3,
+      "top1_match": true,
+      "top3_match": true,
+      "building_match": true,
+      "stance_match": true,
+      "counter_valid": true,
+      "recommended_comp": "camel_line",
+      "top3_rankings": [
+        "camel_line",
+        "pike_line",
+        "monk_line"
+      ],
+      "expected_comps": [
+        "camel_line",
+        "unique_unit_line",
+        "monk_line"
+      ],
+      "recommended_building": "stable",
+      "expected_building": "stable",
+      "recommended_stance": "ALL_IN_AGGRESSION",
+      "expected_stance": "FORWARD_PRESSURE",
+      "eco_allocation_mae": 2.6666666666666665,
+      "inference_latency_ms": 0.42,
+      "explanation_latency_ms": 0.03,
+      "total_latency_ms": 0.45,
+      "strategic_summary": "Recommended: Camel Line (27.5% confidence) from Stable. Fast anti-cavalry cavalry with bonus damage against Knights and cavalry archers."
+    }
+  ],
+  "quality_gates": {
+    "top1_accuracy_gte_75": true,
+    "top3_recall_gte_90": true,
+    "building_acc_gte_80": true,
+    "counter_validity_gte_90": true,
+    "sub_20ms_ml_inference": true
+  }
+}

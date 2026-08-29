@@ -1,0 +1,621 @@
+<!DOCTYPE html><html class="light" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>AoE2 Coach AI - War Room</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;family=Noto+Sans:wght@400;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "outline-variant": "#d2c5b2",
+                        "outline": "#807666",
+                        "map-forest": "#526D39",
+                        "tertiary-fixed-dim": "#b1d092",
+                        "inverse-on-surface": "#faf0d7",
+                        "on-tertiary-fixed-variant": "#344e1d",
+                        "surface-variant": "#ece2c9",
+                        "primary-container": "#cda351",
+                        "on-primary-container": "#523a00",
+                        "surface-container-high": "#f1e8cf",
+                        "on-surface-variant": "#4e4638",
+                        "secondary": "#aa3527",
+                        "tertiary": "#4b6633",
+                        "secondary-fixed": "#ffdad4",
+                        "surface-container": "#f7edd4",
+                        "background": "#fff8ef",
+                        "parchment-deep": "#E7D8B1",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed-dim": "#edc06b",
+                        "on-tertiary-container": "#2c4516",
+                        "on-background": "#201b0c",
+                        "on-error": "#ffffff",
+                        "secondary-fixed-dim": "#ffb4a8",
+                        "on-error-container": "#93000a",
+                        "error-container": "#ffdad6",
+                        "surface-tint": "#7a5909",
+                        "on-tertiary-fixed": "#0d2000",
+                        "primary": "#7a5909",
+                        "primary-fixed": "#ffdea5",
+                        "on-primary": "#ffffff",
+                        "on-secondary-fixed-variant": "#891d12",
+                        "surface-bright": "#fff8ef",
+                        "on-primary-fixed-variant": "#5d4200",
+                        "on-secondary-fixed": "#410000",
+                        "on-primary-fixed": "#271900",
+                        "on-secondary": "#ffffff",
+                        "on-secondary-container": "#6f0703",
+                        "gold-leaf": "#B8862D",
+                        "tertiary-container": "#95b378",
+                        "on-surface": "#201b0c",
+                        "inverse-primary": "#edc06b",
+                        "surface": "#fff8ef",
+                        "charcoal-ink": "#181C29",
+                        "secondary-container": "#fe725f",
+                        "inverse-surface": "#35301f",
+                        "surface-dim": "#e3d9c1",
+                        "blood-accent": "#8B0000",
+                        "error": "#ba1a1a",
+                        "surface-container-highest": "#ece2c9",
+                        "tertiary-fixed": "#cdedac",
+                        "surface-container-low": "#fdf3da",
+                        "on-tertiary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "margin-mobile": "16px",
+                        "container-max": "1280px",
+                        "margin-desktop": "64px",
+                        "gutter": "24px",
+                        "unit": "8px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["\"Source Serif 4\""],
+                        "display-lg": ["\"Source Serif 4\""],
+                        "headline-lg": ["\"Source Serif 4\""],
+                        "label-tactical": ["JetBrains Mono"],
+                        "body-lg": ["Noto Sans"],
+                        "headline-lg-mobile": ["\"Source Serif 4\""],
+                        "body-md": ["Noto Sans"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "label-tactical": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .parchment-panel {
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.05), 0 4px 6px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        .parchment-panel::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border: 1px solid var(--tw-colors-outline-variant);
+            pointer-events: none;
+            border-radius: inherit;
+        }
+        .input-sunken {
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.08);
+            border: 1px solid var(--tw-colors-outline-variant);
+        }
+        .input-sunken:focus-within {
+            box-shadow: 0 0 0 2px var(--tw-colors-gold-leaf);
+            border-color: transparent;
+        }
+        .hr-decorative {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            color: var(--tw-colors-outline);
+        }
+        .hr-decorative::before, .hr-decorative::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid var(--tw-colors-outline-variant);
+        }
+        .hr-decorative:not(:empty)::before {
+            margin-right: .5em;
+        }
+        .hr-decorative:not(:empty)::after {
+            margin-left: .5em;
+        }
+        
+        /* Subtle interactive hover animations */
+        .hover-expand { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .hover-expand:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen relative font-body-md selection:bg-gold-leaf selection:text-on-primary">
+<!-- Background Shader -->
+<!-- STITCH_SHADER_START:ANIMATION_5 class="absolute inset-0 w-full h-full z-[-1] opacity-60 mix-blend-multiply" -->
+<div class="absolute inset-0 w-full h-full z-[-1] opacity-60 mix-blend-multiply" style="display:block;">
+<canvas id="shader-canvas-ANIMATION_5" style="display:block;width:100%;height:100%" width="1280" height="1136"></canvas>
+<script>
+(function() {
+  const canvas = document.getElementById('shader-canvas-ANIMATION_5');
+
+  // Sync the WebGL drawing-buffer size with the CSS-driven layout size.
+  // This fires on initial layout and whenever the element is resized.
+  function syncSize() {
+    const w = canvas.clientWidth  || 1280;
+    const h = canvas.clientHeight || 720;
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width  = w;
+      canvas.height = h;
+    }
+  }
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(syncSize).observe(canvas);
+  }
+  syncSize();
+
+  const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+  if (!gl) return;
+  const vs = `attribute vec2 a_position;
+varying vec2 v_texCoord;
+void main() {
+  v_texCoord = a_position * 0.5 + 0.5;
+  gl_Position = vec4(a_position, 0.0, 1.0);
+}`;
+  const fs = `precision highp float;
+varying vec2 v_texCoord;
+uniform float u_time;
+uniform vec2 u_resolution;
+
+// Simplex noise function for parchment texture
+vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+vec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }
+
+float snoise(vec2 v) {
+  const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
+  vec2 i  = floor(v + dot(v, C.yy) );
+  vec2 x0 = v -   i + dot(i, C.xx);
+  vec2 i1;
+  i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+  vec4 x12 = x0.xyxy + C.xxzz;
+  x12.xy -= i1;
+  i = mod289(i);
+  vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 )) + i.x + vec3(0.0, i1.x, 1.0 ));
+  vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
+  m = m*m ;
+  m = m*m ;
+  vec3 x = 2.0 * fract(p * C.www) - 1.0;
+  vec3 h = abs(x) - 0.5;
+  vec3 a0 = x - floor(x + 0.5);
+  vec3 g = a0 * vec3(x0.x,x12.xz) + h * vec3(x0.y,x12.yw);
+  vec3 l = 1.79284291400159 - 0.85373472095314 * ( g*g + h*h );
+  vec3 r = vec3(0.0);
+  r.x = g.x * l.x;
+  r.y = g.y * l.y;
+  r.z = g.z * l.z;
+  return 130.0 * dot(m, r);
+}
+
+void main() {
+    vec2 uv = v_texCoord;
+    
+    // Base parchment color (Aged Ivory)
+    vec3 parchmentBase = vec3(0.95, 0.91, 0.81);
+    vec3 parchmentDark = vec3(0.85, 0.78, 0.65);
+    
+    // Create grain and texture
+    float n1 = snoise(uv * 10.0);
+    float n2 = snoise(uv * 50.0) * 0.5;
+    float texture = n1 + n2;
+    
+    vec3 color = mix(parchmentBase, parchmentDark, texture * 0.15 + 0.1);
+    
+    // Subtle animated "smoke" or "fog of war" drift
+    float smoke = snoise(uv * 3.0 + vec2(u_time * 0.05, u_time * 0.02));
+    color = mix(color, parchmentDark, smoke * 0.05);
+    
+    // Vignette for aged edge feel
+    float vignette = 1.0 - smoothstep(0.4, 1.2, length(uv - 0.5));
+    color *= mix(0.9, 1.0, vignette);
+    
+    gl_FragColor = vec4(color, 1.0);
+}`;
+  function cs(type, src) {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
+    return s;
+  }
+  const prog = gl.createProgram();
+  gl.attachShader(prog, cs(gl.VERTEX_SHADER, vs));
+  gl.attachShader(prog, cs(gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(prog);
+  gl.useProgram(prog);
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+  const pos = gl.getAttribLocation(prog, 'a_position');
+  gl.enableVertexAttribArray(pos);
+  gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
+  const uTime = gl.getUniformLocation(prog, 'u_time');
+  const uRes = gl.getUniformLocation(prog, 'u_resolution');
+  const uMouse = gl.getUniformLocation(prog, 'u_mouse');
+
+  // u_mouse is in pixel coordinates matching u_resolution (ShaderToy convention).
+  // Shaders that need normalized coords should use: u_mouse / u_resolution.
+  let mouse = { x: canvas.width / 2, y: canvas.height / 2 };
+  window.addEventListener('mousemove', (event) => {
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width && rect.height) {
+      const nx = (event.clientX - rect.left) / rect.width;
+      const ny = 1.0 - (event.clientY - rect.top) / rect.height;
+      mouse.x = nx * canvas.width;
+      mouse.y = ny * canvas.height;
+    }
+  });
+
+  function render(t) {
+    if (typeof ResizeObserver === 'undefined') syncSize();
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    if (uTime) gl.uniform1f(uTime, t * 0.001);
+    if (uRes) gl.uniform2f(uRes, canvas.width, canvas.height);
+    if (uMouse) gl.uniform2f(uMouse, mouse.x, mouse.y);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    requestAnimationFrame(render);
+  }
+  render(0);
+})();
+</script>
+</div>
+<!-- STITCH_SHADER_END:ANIMATION_5 -->
+<!-- SideNavBar (Desktop Only based on layout logic, though hidden on md:hidden usually, we'll implement the responsive pivot) -->
+<div class="hidden md:flex h-full w-64 fixed left-0 top-0 bg-surface-container dark:bg-surface-dim text-primary dark:text-primary-fixed-dim bg-parchment-deep border-r border-outline-variant shadow-md flex-col py-8 z-40">
+<div class="px-6 mb-8 flex flex-col items-center">
+<img class="w-16 h-16 rounded-full border-2 border-gold-leaf mb-4 shadow-sm object-cover" data-alt="A detailed digital illustration of an imposing, weathered empire crest featuring crossed swords and a shield, rendered in a high-fidelity medieval manuscript style with rich gold and deep red accents on a parchment background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCOcogXdLPCHXvtau_x4W8QSVzSldcgv7-Gda6qu-kXyU8xPY9AACIzMSIoeaMm10OqnvRB_5HIV4Wj7yZtstxvGR3HWfpmqKUH1RZIezENS0DGMEB-oa5QaQwZPeM2xA--LtzCgveH-_SbYlAOJfiWYhCuAiQJWZQw5dRtYlqzWWjqir8v3drUaNz0oNDC6RcuLjD-lrzG2Pm4QwQquskvkPweywaHxrPTJ2cw0y44oTE90VsO6VT8_w">
+<div class="font-headline-md text-headline-md text-center text-primary">Imperial Strategist</div>
+<div class="font-label-tactical text-label-tactical text-on-surface-variant text-center mt-1">ELO: 1450 - Castle Age</div>
+</div>
+<div class="px-4 mb-6">
+<button class="w-full bg-charcoal-ink text-on-primary font-label-tactical text-label-tactical font-bold uppercase py-3 border border-gold-leaf hover:bg-blood-accent hover:border-gold-leaf transition-colors duration-200 shadow-sm">
+                New Match
+            </button>
+</div>
+<nav class="flex-1 flex flex-col gap-2 px-2">
+<a class="bg-primary-container text-on-primary-container font-bold border-l-4 border-gold-leaf px-4 py-3 font-label-tactical text-label-tactical flex items-center gap-3 transition-all duration-300 ease-in-out" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">visibility</span>
+                Scout Report
+            </a>
+<a class="text-on-surface-variant dark:text-outline px-4 py-3 flex items-center gap-3 font-label-tactical text-label-tactical hover:bg-surface-variant dark:hover:bg-inverse-surface transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">agriculture</span>
+                Economic Plan
+            </a>
+<a class="text-on-surface-variant dark:text-outline px-4 py-3 flex items-center gap-3 font-label-tactical text-label-tactical hover:bg-surface-variant dark:hover:bg-inverse-surface transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">military_tech</span>
+                Military Advisor
+            </a>
+<a class="text-on-surface-variant dark:text-outline px-4 py-3 flex items-center gap-3 font-label-tactical text-label-tactical hover:bg-surface-variant dark:hover:bg-inverse-surface transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">architecture</span>
+                Build Orders
+            </a>
+<a class="text-on-surface-variant dark:text-outline px-4 py-3 flex items-center gap-3 font-label-tactical text-label-tactical hover:bg-surface-variant dark:hover:bg-inverse-surface transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">account_tree</span>
+                Tech Tree
+            </a>
+</nav>
+<div class="mt-auto flex flex-col gap-2 px-2 border-t border-outline-variant pt-4 mx-4">
+<a class="text-on-surface-variant dark:text-outline px-4 py-2 flex items-center gap-3 font-label-tactical text-label-tactical hover:bg-surface-variant transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+                Codex
+            </a>
+<a class="text-on-surface-variant dark:text-outline px-4 py-2 flex items-center gap-3 font-label-tactical text-label-tactical hover:bg-surface-variant transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">help_center</span>
+                Support
+            </a>
+</div>
+</div>
+<!-- Main Content Area -->
+<main class="md:ml-64 min-h-screen flex flex-col">
+<!-- TopAppBar (Hidden on desktop if SideNav is present, but spec says use it. We will use it as a top header for the canvas area) -->
+<header class="bg-background dark:bg-inverse-surface text-primary dark:text-primary-fixed-dim bg-parchment-deep border-b border-outline-variant shadow-sm flex justify-between items-center w-full px-6 py-4 sticky top-0 z-30">
+<div class="flex items-center gap-4">
+<div class="font-headline-lg text-headline-lg font-bold text-gold-leaf dark:text-primary-fixed md:hidden">AoE2 Coach AI</div>
+<div class="hidden md:flex gap-6 items-center">
+<a class="text-secondary dark:text-secondary-fixed border-b-2 border-gold-leaf pb-1 font-headline-md text-headline-md scale-95 transition-transform hover:text-blood-accent transition-colors duration-200" href="#">War Room</a>
+<a class="text-on-surface-variant dark:text-outline font-headline-md text-headline-md hover:text-blood-accent transition-colors duration-200" href="#">History</a>
+<a class="text-on-surface-variant dark:text-outline font-headline-md text-headline-md hover:text-blood-accent transition-colors duration-200" href="#">Tactics</a>
+</div>
+</div>
+<div class="flex items-center gap-4 text-on-surface-variant">
+<button class="hover:text-blood-accent transition-colors duration-200 p-2"><span class="material-symbols-outlined">settings</span></button>
+<button class="hover:text-blood-accent transition-colors duration-200 p-2"><span class="material-symbols-outlined">history_edu</span></button>
+<img alt="Royal Tactician Profile" class="w-10 h-10 rounded-full border border-gold-leaf ml-2 object-cover" data-alt="A small circular portrait of a stoic medieval king adorned in subtle gold finery, set against a dark textured background, evoking an Age of Empires tactician's profile image." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCGbI09pZEdLZJhb2Z8rEZw-OtAUu0a0BvBSnPWAnJp8ZIZm8ieio6T94s1VWppqaWb7pGpNDWtNcIzOzlku-DivbgYOXrQSdTsinZHoBwlWf2IowZKrw3sQnYoH9dvTA05HkoGSqn8zFIlaFCBrthr7sVaUogWlR2EP6gAVRZU2v_qzNiN9DknzQAMBXlEo0eWqMe8uCjyMriH4FZB6Pe9-S_L3jcIxhfghUf6YTtrJmHLTWBJ-hcIXA">
+</div>
+</header>
+<!-- Canvas / Dashboard Content -->
+<div class="flex-1 p-margin-mobile md:p-gutter max-w-container-max mx-auto w-full space-y-gutter pb-24 md:pb-gutter">
+<!-- 30-Second Mid-Game Wizard -->
+
+<!-- MATCH CONTEXT & SETUP -->
+<section class="bg-surface-container parchment-panel p-6 rounded-lg">
+<div class="flex items-center justify-between mb-6">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-gold-leaf text-on-primary flex items-center justify-center font-headline-md text-sm border border-surface-tint">1</div>
+<h2 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-primary uppercase tracking-wide">Match Context &amp; Setup</h2>
+</div>
+<div class="font-label-tactical text-label-tactical text-on-surface-variant bg-surface-variant px-3 py-1 border border-outline-variant rounded">Franks vs Vikings</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+<!-- Your Civ -->
+<div class="space-y-2">
+<label class="flex items-center gap-2 font-label-tactical text-label-tactical text-on-surface">
+<span class="material-symbols-outlined text-sm text-gold-leaf">account_circle</span> Your Civilization
+                        </label>
+<div class="input-sunken bg-surface flex items-center px-3 py-2 rounded">
+<select class="w-full bg-transparent border-none text-primary font-body-md focus:ring-0 p-0 cursor-pointer outline-none">
+<option>Franks</option>
+</select>
+</div>
+</div>
+<!-- Opponent Civ -->
+<div class="space-y-2">
+<label class="flex items-center gap-2 font-label-tactical text-label-tactical text-on-surface">
+<span class="material-symbols-outlined text-sm text-secondary">target</span> Opponent Civilization
+                        </label>
+<div class="input-sunken bg-surface flex items-center px-3 py-2 rounded">
+<select class="w-full bg-transparent border-none text-primary font-body-md focus:ring-0 p-0 cursor-pointer outline-none">
+<option>Vikings</option>
+</select>
+</div>
+</div>
+<!-- Player ELO -->
+<div class="space-y-2">
+<div class="flex justify-between items-center">
+<label class="flex items-center gap-2 font-label-tactical text-label-tactical text-on-surface">
+<span class="material-symbols-outlined text-sm text-primary">emoji_events</span> Player ELO
+                            </label>
+<span class="font-label-tactical text-gold-leaf font-bold">800</span>
+</div>
+<div class="flex gap-1">
+<div class="input-sunken bg-surface flex-1 px-3 py-2 rounded flex items-center justify-center font-label-tactical text-label-tactical text-primary">800</div>
+<div class="flex-1 flex flex-wrap gap-1 items-center">
+<button class="bg-gold-leaf text-on-primary text-xs px-2 py-1 rounded-sm">800</button>
+<button class="bg-surface-variant text-on-surface-variant border border-outline-variant text-xs px-2 py-1 rounded-sm hover:bg-outline-variant">1000</button>
+<button class="bg-surface-variant text-on-surface-variant border border-outline-variant text-xs px-2 py-1 rounded-sm hover:bg-outline-variant">1200</button>
+<button class="bg-surface-variant text-on-surface-variant border border-outline-variant text-xs px-2 py-1 rounded-sm hover:bg-outline-variant">1400</button>
+</div>
+</div>
+</div>
+<!-- Game Time -->
+<div class="space-y-2">
+<div class="flex justify-between items-center">
+<label class="flex items-center gap-2 font-label-tactical text-label-tactical text-on-surface">
+<span class="material-symbols-outlined text-sm text-tertiary">schedule</span> Game Time
+                            </label>
+<span class="font-label-tactical text-tertiary font-bold">22:30</span>
+</div>
+<div class="flex items-center gap-3 h-10">
+<input class="w-full accent-tertiary h-2 bg-outline-variant rounded-full appearance-none cursor-pointer" type="range">
+<button class="bg-surface-variant text-on-surface-variant border border-outline-variant text-xs px-2 py-1 rounded-sm">-1m</button>
+<button class="bg-surface-variant text-on-surface-variant border border-outline-variant text-xs px-2 py-1 rounded-sm">+1m</button>
+</div>
+</div>
+</div>
+<div class="hr-decorative mb-6"><span class="material-symbols-outlined text-sm">diamond</span></div>
+<!-- Current Game Age -->
+<div class="space-y-3">
+<label class="flex items-center gap-2 font-label-tactical text-label-tactical text-on-surface">
+<span class="material-symbols-outlined text-sm text-primary">shield</span> Current Game Age
+                    </label>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+<button class="bg-surface border border-outline-variant text-on-surface-variant py-3 rounded flex items-center justify-center gap-2 font-body-md hover:bg-surface-variant transition-colors shadow-sm">
+<span class="material-symbols-outlined text-outline">home</span> Dark Age
+                        </button>
+<button class="bg-surface border border-outline-variant text-on-surface-variant py-3 rounded flex items-center justify-center gap-2 font-body-md hover:bg-surface-variant transition-colors shadow-sm">
+<span class="material-symbols-outlined text-outline">swords</span> Feudal Age
+                        </button>
+<button class="bg-parchment-deep border-2 border-gold-leaf text-primary font-bold py-3 rounded flex items-center justify-center gap-2 font-body-md shadow-md relative overflow-hidden">
+<div class="absolute inset-0 bg-gold-leaf opacity-10"></div>
+<span class="material-symbols-outlined text-gold-leaf" style="font-variation-settings: 'FILL' 1;">castle</span> Castle Age
+                        </button>
+<button class="bg-surface border border-outline-variant text-on-surface-variant py-3 rounded flex items-center justify-center gap-2 font-body-md hover:bg-surface-variant transition-colors shadow-sm opacity-50 cursor-not-allowed">
+<span class="material-symbols-outlined text-outline">military_tech</span> Imperial Age
+                        </button>
+</div>
+</div>
+</section>
+<!-- LIVE ECONOMY & STOCKPILE -->
+<section class="bg-surface-container parchment-panel p-6 rounded-lg">
+<div class="flex items-center justify-between mb-6 border-b border-outline-variant pb-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-gold-leaf text-on-primary flex items-center justify-center font-headline-md text-sm border border-surface-tint">2</div>
+<h2 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-primary uppercase tracking-wide">Live Economy &amp; Stockpile</h2>
+</div>
+
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<!-- Food Card -->
+<div class="bg-surface border border-outline-variant p-4 rounded hover-expand">
+<div class="flex justify-between items-center mb-4 border-b border-outline-variant pb-2">
+<div class="flex items-center gap-2 font-headline-md text-secondary">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">restaurant</span> FOOD
+                            </div>
+<span class="text-xs bg-surface-variant text-on-surface-variant px-2 py-1 rounded-sm border border-outline-variant">29% eco</span>
+</div>
+<div class="space-y-4">
+<div>
+<label class="text-xs text-on-surface-variant mb-1 block">Current Bank</label>
+<div class="flex gap-2">
+<div class="input-sunken bg-surface-bright flex-1 px-3 py-2 rounded text-secondary font-label-tactical font-bold">320</div>
+<button class="bg-surface-variant border border-outline-variant px-3 rounded text-on-surface-variant text-sm hover:bg-outline-variant">+100</button>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-xs text-on-surface-variant mb-1">
+<label class="">Farmers / Gatherers</label>
+<span class="font-bold text-primary">14</span>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex gap-1">
+
+<button class="w-8 h-8 bg-surface-variant border border-outline-variant rounded flex items-center justify-center hover:bg-outline-variant">-</button>
+</div>
+<div class="flex gap-1">
+
+
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Wood Card -->
+<div class="bg-surface border border-outline-variant p-4 rounded hover-expand">
+<div class="flex justify-between items-center mb-4 border-b border-outline-variant pb-2">
+<div class="flex items-center gap-2 font-headline-md text-tertiary">
+<span class="material-symbols-outlined text-tertiary" style="font-variation-settings: 'FILL' 1;">forest</span> WOOD
+                            </div>
+<span class="text-xs bg-surface-variant text-on-surface-variant px-2 py-1 rounded-sm border border-outline-variant">54% eco</span>
+</div>
+<div class="space-y-4">
+<div>
+<label class="text-xs text-on-surface-variant mb-1 block">Current Bank</label>
+<div class="flex gap-2">
+<div class="input-sunken bg-surface-bright flex-1 px-3 py-2 rounded text-tertiary font-label-tactical font-bold">750</div>
+<button class="bg-surface-variant border border-outline-variant px-3 rounded text-on-surface-variant text-sm hover:bg-outline-variant">+100</button>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-xs text-on-surface-variant mb-1">
+<label class="">Lumberjacks</label>
+<span class="font-bold text-primary">26</span>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex gap-1">
+
+<button class="w-8 h-8 bg-surface-variant border border-outline-variant rounded flex items-center justify-center hover:bg-outline-variant">-</button>
+</div>
+<div class="flex gap-1">
+
+
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Gold Card -->
+<div class="bg-surface border border-outline-variant p-4 rounded hover-expand">
+<div class="flex justify-between items-center mb-4 border-b border-outline-variant pb-2">
+<div class="flex items-center gap-2 font-headline-md text-gold-leaf">
+<span class="material-symbols-outlined text-gold-leaf" style="font-variation-settings: 'FILL' 1;">monetization_on</span> GOLD
+                            </div>
+<span class="text-xs bg-surface-variant text-on-surface-variant px-2 py-1 rounded-sm border border-outline-variant">13% eco</span>
+</div>
+<div class="space-y-4">
+<div>
+<label class="text-xs text-on-surface-variant mb-1 block">Current Bank</label>
+<div class="flex gap-2">
+<div class="input-sunken bg-surface-bright flex-1 px-3 py-2 rounded text-gold-leaf font-label-tactical font-bold">120</div>
+<button class="bg-surface-variant border border-outline-variant px-3 rounded text-on-surface-variant text-sm hover:bg-outline-variant">+100</button>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-xs text-on-surface-variant mb-1">
+<label class="">Gold Miners</label>
+<span class="font-bold text-primary">6</span>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex gap-1">
+
+<button class="w-8 h-8 bg-surface-variant border border-outline-variant rounded flex items-center justify-center hover:bg-outline-variant">-</button>
+</div>
+
+</div>
+</div>
+</div>
+</div>
+<!-- Stone Card -->
+<div class="bg-surface border border-outline-variant p-4 rounded hover-expand">
+<div class="flex justify-between items-center mb-4 border-b border-outline-variant pb-2">
+<div class="flex items-center gap-2 font-headline-md text-outline">
+<span class="material-symbols-outlined text-outline" style="font-variation-settings: 'FILL' 1;">landscape</span> STONE
+                            </div>
+<span class="text-xs bg-surface-variant text-on-surface-variant px-2 py-1 rounded-sm border border-outline-variant">4% eco</span>
+</div>
+<div class="space-y-4">
+<div>
+<label class="text-xs text-on-surface-variant mb-1 block">Current Bank</label>
+<div class="flex gap-2">
+<div class="input-sunken bg-surface-bright flex-1 px-3 py-2 rounded text-outline font-label-tactical font-bold">450</div>
+<button class="bg-surface-variant border border-outline-variant px-3 rounded text-on-surface-variant text-sm hover:bg-outline-variant">+100</button>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-xs text-on-surface-variant mb-1">
+<label class="">Stone Miners</label>
+<span class="font-bold text-primary">2</span>
+</div>
+<div class="flex justify-between items-center">
+<div class="flex gap-1">
+
+<button class="w-8 h-8 bg-surface-variant border border-outline-variant rounded flex items-center justify-center hover:bg-outline-variant">-</button>
+</div>
+<div class="flex gap-1">
+
+
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-8 pt-6 border-t border-outline-variant">
+<div class="flex justify-between text-sm font-label-tactical text-on-surface-variant mb-2">
+<span class="">Villager Distribution Breakdown</span>
+<span class="font-bold">14F / 26W / 6G / 2S</span>
+</div>
+<div class="h-3 w-full flex rounded-full overflow-hidden border border-outline-variant shadow-inner">
+<div class="bg-secondary h-full" style="width: 29%"></div>
+<div class="bg-tertiary h-full" style="width: 54%"></div>
+<div class="bg-gold-leaf h-full" style="width: 13%"></div>
+<div class="bg-outline h-full" style="width: 4%"></div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-2 pt-2 bg-surface-container-highest dark:bg-surface-dim text-primary dark:text-primary-fixed-dim bg-parchment-deep border-t border-outline-variant shadow-2xl docked full-width bottom-0 rounded-t-xl md:hidden">
+<a class="flex flex-col items-center justify-center bg-gold-leaf text-on-primary rounded-xl p-2 font-label-tactical text-label-tactical scale-110 transition-transform duration-150 shadow-md" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">query_stats</span>
+<span class="text-xs mt-1">Live Stats</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline p-2 font-label-tactical text-label-tactical hover:text-blood-accent transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="text-xs mt-1">Forces</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline p-2 font-label-tactical text-label-tactical hover:text-blood-accent transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">psychology</span>
+<span class="text-xs mt-1">Advice</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline p-2 font-label-tactical text-label-tactical hover:text-blood-accent transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">notification_important</span>
+<span class="text-xs mt-1">Alerts</span>
+</a>
+</nav>
+
+
+</body></html>

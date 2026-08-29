@@ -50,6 +50,54 @@ from aoe2_coach.rules.tech_tree import is_unit_available, get_civ_info
 logger = logging.getLogger(__name__)
 
 
+CIV_COMPOSITION_AFFINITIES: Dict[str, Dict[str, float]] = {
+    "franks": {"knight_line": 0.50, "scout_line": 0.15, "pike_line": 0.10, "unique_unit_line": 0.10},
+    "britons": {"crossbow_line": 0.55, "skirm_line": 0.15, "pike_line": 0.15, "unique_unit_line": 0.10},
+    "mayans": {"crossbow_line": 0.40, "skirm_line": 0.25, "champion_line": 0.20, "pike_line": 0.15, "unique_unit_line": 0.25},
+    "aztecs": {"monk_line": 0.35, "champion_line": 0.25, "pike_line": 0.25, "unique_unit_line": 0.20},
+    "byzantines": {"unique_unit_line": 0.35, "skirm_line": 0.25, "pike_line": 0.25, "camel_line": 0.15},
+    "turks": {"unique_unit_line": 0.40, "siege_line": 0.25, "camel_line": 0.20, "scout_line": 0.15},
+    "mongols": {"scout_line": 0.35, "unique_unit_line": 0.35, "siege_line": 0.20, "crossbow_line": 0.15},
+    "chinese": {"unique_unit_line": 0.35, "camel_line": 0.30, "crossbow_line": 0.25, "pike_line": 0.15},
+    "ethiopians": {"crossbow_line": 0.50, "siege_line": 0.30, "skirm_line": 0.15},
+    "poles": {"knight_line": 0.40, "scout_line": 0.25, "unique_unit_line": 0.20, "pike_line": 0.15},
+    "romans": {"champion_line": 0.40, "siege_line": 0.30, "unique_unit_line": 0.25, "knight_line": 0.10},
+    "lithuanians": {"unique_unit_line": 0.40, "knight_line": 0.30, "monk_line": 0.25, "pike_line": 0.10},
+    "gurjaras": {"unique_unit_line": 0.45, "camel_line": 0.35, "scout_line": 0.15},
+    "khmer": {"siege_line": 0.40, "knight_line": 0.25, "unique_unit_line": 0.25, "scout_line": 0.15},
+    "burgundians": {"knight_line": 0.50, "unique_unit_line": 0.25, "skirm_line": 0.15, "siege_line": 0.15},
+    "saracens": {"camel_line": 0.45, "unique_unit_line": 0.35, "monk_line": 0.15, "crossbow_line": 0.15},
+    "goths": {"unique_unit_line": 0.45, "champion_line": 0.30, "pike_line": 0.20},
+    "huns": {"knight_line": 0.40, "scout_line": 0.25, "crossbow_line": 0.25},
+    "vikings": {"unique_unit_line": 0.35, "champion_line": 0.30, "crossbow_line": 0.25, "pike_line": 0.15},
+}
+
+
+def map_counter_unit_to_comp(unit_name: str) -> str:
+    u = unit_name.lower().replace(" ", "_")
+    if any(k in u for k in ["knight", "cavalier", "paladin", "boyar", "monaspa", "coustillier", "szlachta"]):
+        return "knight_line"
+    elif any(k in u for k in ["crossbow", "archer", "arbalest", "arbalester", "longbow", "composite_bow", "rattan"]):
+        return "crossbow_line"
+    elif any(k in u for k in ["spear", "pike", "halberdier"]):
+        return "pike_line"
+    elif any(k in u for k in ["skirm", "genitour"]):
+        return "skirm_line"
+    elif any(k in u for k in ["camel", "mameluke", "shrivamsha"]):
+        return "camel_line" if "shrivamsha" not in u and "mameluke" not in u else "unique_unit_line"
+    elif any(k in u for k in ["mangonel", "onager", "scorpion", "bombard", "ram", "siege", "organ_gun"]):
+        return "siege_line"
+    elif any(k in u for k in ["monk", "missionary"]):
+        return "monk_line"
+    elif any(k in u for k in ["cataphract", "janissary", "huskarl", "berserk", "leitis", "chu_ko_nu", "plumed", "conquistador", "jaguar", "woad", "obuch", "urumi", "mameluke", "shrivamsha", "ballista_elephant", "battle_elephant"]):
+        return "unique_unit_line"
+    elif any(k in u for k in ["militia", "man_at_arms", "long_swordsman", "champion", "legionary", "eagle"]):
+        return "champion_line"
+    elif any(k in u for k in ["scout", "light_cav", "hussar", "steppe_lancer"]):
+        return "scout_line"
+    return "knight_line"
+
+
 class MatchContext(BaseModel):
     player_civ: str
     opponent_civ: str
@@ -179,58 +227,122 @@ class MLInferenceService:
         # 1. Feature Encoding
         X = self.encoder.encode_dict(state_dict).reshape(1, -1)
 
-        # 2. ML Strategy Prediction (via ONNX runtime or python model)
-        if self.use_onnx and self.onnx_engine and self.onnx_engine.is_loaded:
-            strat_probs = self.onnx_engine.predict_strategy_proba(X)[0]
-            sorted_indices = np.argsort(strat_probs)[::-1]
-            rankings: List[CompositionRanking] = []
-            for idx in sorted_indices:
-                comp_name = COMPOSITION_CLASSES[idx]
-                conf = float(strat_probs[idx])
-                details = STRATEGY_DETAILS.get(comp_name, {
-                    "building": "stable",
-                    "techs": [],
-                    "rationale": f"Produce {comp_name.replace('_', ' ').title()}",
-                })
-                rankings.append(
-                    CompositionRanking(
-                        composition=comp_name,
-                        confidence=round(conf, 4),
-                        recommended_building=details["building"],
-                        key_technologies=details["techs"],
-                        strategic_rationale=details["rationale"],
-                    )
-                )
-            top = rankings[0]
-            second = rankings[1] if len(rankings) > 1 else None
-            strategy_plan = StrategyPrediction(
-                primary_composition=top.composition,
-                confidence=top.confidence,
-                secondary_composition=second.composition if second and second.confidence > 0.15 else None,
-                recommended_building=top.recommended_building,
-                recommended_tech_focus=top.key_technologies[0] if top.key_technologies else "none",
-                rankings=rankings,
-                strategic_summary=(
-                    f"Recommended: {top.composition.replace('_', ' ').title()} "
-                    f"({round(top.confidence * 100, 1)}% confidence) from {top.recommended_building.replace('_', ' ').title()}. "
-                    f"{top.strategic_rationale}"
-                ),
-            )
-        else:
-            strategy_plan = self.strategy_classifier.predict_single(X)
-
-        # Tech tree guardrail: If civ cannot produce predicted unit, fallback
-        if not is_unit_available(p_civ, strategy_plan.primary_composition.replace("_line", "")):
-            if p_civ.lower() in ("aztecs", "mayans", "incas") and "knight" in strategy_plan.primary_composition:
-                strategy_plan.primary_composition = "eagle_line"
-                strategy_plan.recommended_building = "barracks"
-
-        # 3. Deterministic Counter Matrix Evaluation (Phase 2 Rule Engine)
+        # 2. Deterministic Counter Matrix Evaluation (Phase 2 Rule Engine)
         counter_result = self.counter_engine.recommend_counters(
             player_civ=p_civ,
             player_age=age_enum,
             enemy_units=sighted_enemy,
             enemy_civ=opp_civ,
+        )
+
+        # 3. Candidate Strategy Selector: Fuse ML predictions + Counter Matrix + Civ Tech Constraints
+        if self.use_onnx and self.onnx_engine and self.onnx_engine.is_loaded:
+            raw_strat_probs = self.onnx_engine.predict_strategy_proba(X)[0].copy()
+        else:
+            raw_strat_probs = self.strategy_classifier.predict_proba(X)[0].copy()
+
+        # Build fused score array
+        fused_scores = np.zeros(len(COMPOSITION_CLASSES), dtype=np.float32)
+        for idx, comp_name in enumerate(COMPOSITION_CLASSES):
+            base_ml_p = float(raw_strat_probs[idx])
+            
+            # Counter score bonus
+            counter_bonus = 0.0
+            for c in counter_result.recommended_counters:
+                mapped_comp = map_counter_unit_to_comp(c.unit_name)
+                if mapped_comp == comp_name:
+                    eff = float(c.effectiveness_score) / 10.0
+                    if c.counter_type == "hard_counter":
+                        eff *= 1.3
+                    counter_bonus = max(counter_bonus, eff)
+
+            # Civ affinity bonus
+            civ_aff_dict = CIV_COMPOSITION_AFFINITIES.get(p_civ.lower(), {})
+            civ_bonus = civ_aff_dict.get(comp_name, 0.05)
+
+            # Special dynamic situational bonuses:
+            # 1. Stone >= 650 in Castle/Imp Age -> Castle Unique Unit boost
+            cur_stone = int(state_dict.get("stone", state_dict.get("player_stone", 0)))
+            if cur_stone >= 650 and p_age_int >= 3 and comp_name == "unique_unit_line":
+                civ_bonus += 0.30
+
+            # 2. Camel civilizations vs cavalry -> Prefer Camels over Pikes
+            if p_civ.lower() in ("saracens", "gurjaras", "hindustanis", "berbers", "chinese", "turks") and comp_name == "camel_line":
+                civ_bonus += 0.25
+
+            # 3. Roman infantry & siege specialization
+            if p_civ.lower() == "romans" and comp_name in ("champion_line", "siege_line"):
+                civ_bonus += 0.25
+
+            # 4. Lithuanian Leitis & Monk specialization
+            if p_civ.lower() == "lithuanians" and comp_name in ("unique_unit_line", "monk_line"):
+                civ_bonus += 0.20
+
+            # Weighted candidate fusion: 35% ML Prior + 45% Counter Matrix + 20% Civ Affinity
+            if sighted_enemy:
+                fused_val = (0.30 * base_ml_p) + (0.45 * counter_bonus) + (0.25 * civ_bonus)
+            else:
+                fused_val = (0.50 * base_ml_p) + (0.50 * civ_bonus)
+
+            # Strict Tech Tree Constraints (Meso civs have no cavalry/stables, etc.)
+            if p_civ.lower() in ("aztecs", "mayans", "incas") and comp_name in ("knight_line", "camel_line", "scout_line"):
+                fused_val = 0.0
+            elif comp_name == "camel_line" and not is_unit_available(p_civ, "camel_rider"):
+                fused_val = 0.0
+
+            fused_scores[idx] = max(0.0, fused_val)
+
+        # Re-normalize fused distribution
+        score_sum = fused_scores.sum()
+        if score_sum > 0:
+            fused_probs = fused_scores / score_sum
+        else:
+            fused_probs = np.ones(len(COMPOSITION_CLASSES), dtype=np.float32) / len(COMPOSITION_CLASSES)
+
+        sorted_indices = np.argsort(fused_probs)[::-1]
+        rankings: List[CompositionRanking] = []
+        for idx in sorted_indices:
+            comp_name = COMPOSITION_CLASSES[idx]
+            conf = float(fused_probs[idx])
+            details = STRATEGY_DETAILS.get(comp_name, {
+                "building": "archery_range",
+                "techs": [],
+                "rationale": f"Produce {comp_name.replace('_', ' ').title()}",
+            })
+            bldg = details["building"]
+            if comp_name == "unique_unit_line":
+                if p_civ.lower() in ("gurjaras", "mongols") and p_age_int <= 3:
+                    bldg = "stable"
+                else:
+                    bldg = "castle"
+            elif comp_name == "monk_line":
+                bldg = "monastery"
+
+            rankings.append(
+                CompositionRanking(
+                    composition=comp_name,
+                    confidence=round(conf, 4),
+                    recommended_building=bldg,
+                    key_technologies=details["techs"],
+                    strategic_rationale=details["rationale"],
+                )
+            )
+
+        top = rankings[0]
+        second = rankings[1] if len(rankings) > 1 else None
+
+        strategy_plan = StrategyPrediction(
+            primary_composition=top.composition,
+            confidence=top.confidence,
+            secondary_composition=second.composition if second and second.confidence > 0.15 else None,
+            recommended_building=top.recommended_building,
+            recommended_tech_focus=top.key_technologies[0] if top.key_technologies else "none",
+            rankings=rankings,
+            strategic_summary=(
+                f"Recommended: {top.composition.replace('_', ' ').title()} "
+                f"({round(top.confidence * 100, 1)}% confidence) from {top.recommended_building.replace('_', ' ').title()}. "
+                f"{top.strategic_rationale}"
+            ),
         )
 
         # 4. ML Win Probability Estimation
@@ -294,21 +406,47 @@ class MLInferenceService:
 
         # 6. ML Stance & Timing Prediction
         if self.use_onnx and self.onnx_engine and self.onnx_engine.is_loaded:
-            stance_probs = self.onnx_engine.predict_stance_proba(X)[0]
-            top_stance_idx = int(np.argmax(stance_probs))
+            raw_stance_probs = self.onnx_engine.predict_stance_proba(X)[0].copy()
+            top_stance_idx = int(np.argmax(raw_stance_probs))
             top_stance = STANCE_CLASSES[top_stance_idx]
-            conf = float(stance_probs[top_stance_idx])
+            conf = float(raw_stance_probs[top_stance_idx])
             civ_power_spike = f"{p_civ.title()} Age {p_age_int} strategic window."
             threat_alert = ""
             attack_win = 240
             urgency = "medium"
 
+            # Contextual adjustments based on game state, age & civ bonuses
+            mil_total = int(state_dict.get("military_total", state_dict.get("player_military_total", 0)))
+            if p_age_int == 2:  # Feudal Age
+                if top_stance in ("FAST_IMPERIAL_BOOM", "RELIC_HILL_CONTROL"):
+                    top_stance = "FORWARD_PRESSURE"
+            elif p_age_int == 3:  # Castle Age
+                if top_stance == "FAST_IMPERIAL_BOOM" and mil_total > 3:
+                    top_stance = "FORWARD_PRESSURE"
+
             if p_civ.lower() == "franks" and p_age_int == 3:
                 civ_power_spike = "Castle Age Knight HP Power Spike (+20% HP). Overpower infantry and archers now!"
                 attack_win = 180
                 urgency = "immediate"
+                top_stance = "FORWARD_PRESSURE" if top_stance != "ALL_IN_AGGRESSION" else top_stance
             elif p_civ.lower() == "britons" and p_age_int in (2, 3):
                 civ_power_spike = "Archery Range Advantage. Kite enemy infantry and establish hill control."
+                top_stance = "FORWARD_PRESSURE" if top_stance not in ("FORWARD_PRESSURE", "RELIC_HILL_CONTROL") else top_stance
+            elif p_civ.lower() in ("aztecs", "lithuanians") and p_age_int == 3:
+                civ_power_spike = "Relic & Monastery Advantage. Prioritize monk relic capture and defense."
+                if counter_result.threat_analysis.threat_level in ("high", "critical"):
+                    top_stance = "DEFENSIVE_TURTLING"
+                else:
+                    top_stance = "RELIC_HILL_CONTROL"
+            elif p_civ.lower() == "turks" and p_age_int == 3:
+                civ_power_spike = "Janissary / Fast Castle power spike. Overwhelm enemy perimeter."
+                top_stance = "ALL_IN_AGGRESSION"
+            elif p_civ.lower() == "byzantines" and p_age_int == 4:
+                top_stance = "ALL_IN_AGGRESSION"
+
+            if counter_result.threat_analysis.threat_level == "critical" and win_p < 0.45:
+                top_stance = "DEFENSIVE_TURTLING"
+                urgency = "defend_now"
 
             if opp_civ.lower() == "vikings" and p_age_int == 3:
                 threat_alert = "Warning: Do not allow Vikings to mass Elite Berserkers with Berserkergang in Imperial Age. Strike now!"

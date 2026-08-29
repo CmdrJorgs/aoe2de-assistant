@@ -1,71 +1,67 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useCoachStore } from "@/lib/store";
-import { Eye, Plus, Minus, Trash2, ShieldAlert, Castle } from "lucide-react";
+import {
+  getAssetDatabase,
+  getAssetFromCatalog,
+  AssetDatabase,
+} from "@/lib/assetDb";
+import { Trash2 } from "lucide-react";
 
-interface EntityDef {
+interface GridEntity {
   name: string;
-  category: "infantry" | "cavalry" | "archer" | "siege" | "monk" | "building";
-  icon: string;
-  isUnique?: boolean;
+  category: "military" | "economy" | "building";
+  type: "unit" | "building";
 }
 
-const COMMON_ENTITIES: EntityDef[] = [
-  // Cavalry
-  { name: "Knight", category: "cavalry", icon: "♞" },
-  { name: "Scout Cavalry", category: "cavalry", icon: "🐎" },
-  { name: "Camel Rider", category: "cavalry", icon: "🐪" },
-  { name: "Paladin", category: "cavalry", icon: "🏇" },
-  { name: "Light Cavalry", category: "cavalry", icon: "🗡️" },
-  { name: "Steppe Lancer", category: "cavalry", icon: "🪓" },
+const TACTICAL_ENTITIES: GridEntity[] = [
+  // Military Units
+  { name: "Militia", category: "military", type: "unit" },
+  { name: "Spearman", category: "military", type: "unit" },
+  { name: "Eagle Scout", category: "military", type: "unit" },
+  { name: "Archer", category: "military", type: "unit" },
+  { name: "Skirmisher", category: "military", type: "unit" },
+  { name: "Cavalry Archer", category: "military", type: "unit" },
+  { name: "Scout Cavalry", category: "military", type: "unit" },
+  { name: "Knight", category: "military", type: "unit" },
+  { name: "Camel", category: "military", type: "unit" },
+  { name: "Battering Ram", category: "military", type: "unit" },
+  { name: "Mangonel", category: "military", type: "unit" },
+  { name: "Scorpion", category: "military", type: "unit" },
+  { name: "Trebuchet", category: "military", type: "unit" },
+  { name: "Petard", category: "military", type: "unit" },
+  { name: "Monk", category: "military", type: "unit" },
 
-  // Archers
-  { name: "Archer", category: "archer", icon: "🏹" },
-  { name: "Crossbowman", category: "archer", icon: "🎯" },
-  { name: "Arbalester", category: "archer", icon: "🎯" },
-  { name: "Skirmisher", category: "archer", icon: "🛡️" },
-  { name: "Cavalry Archer", category: "archer", icon: "🐎🏹" },
-  { name: "Hand Cannoneer", category: "archer", icon: "💥" },
+  // Ships
+  { name: "Galley", category: "military", type: "unit" },
+  { name: "Demolition Ship", category: "military", type: "unit" },
+  { name: "Fire Ship", category: "military", type: "unit" },
 
-  // Infantry
-  { name: "Spearman", category: "infantry", icon: "🔱" },
-  { name: "Pikeman", category: "infantry", icon: "🔱" },
-  { name: "Halberdier", category: "infantry", icon: "🔱" },
-  { name: "Man-at-Arms", category: "infantry", icon: "⚔️" },
-  { name: "Long Swordsman", category: "infantry", icon: "⚔️" },
-  { name: "Champion", category: "infantry", icon: "🛡️⚔️" },
-  { name: "Eagle Scout", category: "infantry", icon: "🦅" },
-  { name: "Eagle Warrior", category: "infantry", icon: "🦅" },
-
-  // Unique Units
-  { name: "Berserk", category: "infantry", icon: "🪓", isUnique: true },
-  { name: "Huskarl", category: "infantry", icon: "🛡️", isUnique: true },
-  { name: "Longbowman", category: "archer", icon: "🏹", isUnique: true },
-  { name: "Plumed Archer", category: "archer", icon: "🪶", isUnique: true },
-  { name: "Mangudai", category: "archer", icon: "🏹🐎", isUnique: true },
-  { name: "Conquistador", category: "cavalry", icon: "🔫", isUnique: true },
-  { name: "Cataphract", category: "cavalry", icon: "🛡️♞", isUnique: true },
-  { name: "Throwing Axeman", category: "infantry", icon: "🪓", isUnique: true },
-  { name: "Janissary", category: "archer", icon: "💥", isUnique: true },
-  { name: "Chu Ko Nu", category: "archer", icon: "🏹", isUnique: true },
-
-  // Siege & Monks
-  { name: "Mangonel", category: "siege", icon: "☄️" },
-  { name: "Battering Ram", category: "siege", icon: "🪵" },
-  { name: "Scorpion", category: "siege", icon: "🏹" },
-  { name: "Trebuchet", category: "siege", icon: "🏰" },
-  { name: "Bombard Cannon", category: "siege", icon: "💣" },
-  { name: "Monk", category: "monk", icon: "✝️" },
+  // Economy Units
+  { name: "Villager", category: "economy", type: "unit" },
+  { name: "Trade Cart", category: "economy", type: "unit" },
+  { name: "Fishing Ship", category: "economy", type: "unit" },
+  { name: "Transport Ship", category: "economy", type: "unit" },
 
   // Buildings
-  { name: "Castle", category: "building", icon: "🏰" },
-  { name: "Archery Range", category: "building", icon: "🏹" },
-  { name: "Stable", category: "building", icon: "🛖" },
-  { name: "Siege Workshop", category: "building", icon: "⚙️" },
-  { name: "Barracks", category: "building", icon: "⚔️" },
-  { name: "Monastery", category: "building", icon: "⛪" },
-  { name: "Watch Tower", category: "building", icon: "🗼" },
+  { name: "Castle", category: "building", type: "building" },
+  { name: "Town Center", category: "building", type: "building" },
+  { name: "Barracks", category: "building", type: "building" },
+  { name: "Archery Range", category: "building", type: "building" },
+  { name: "Stable", category: "building", type: "building" },
+  { name: "Siege Workshop", category: "building", type: "building" },
+  { name: "Blacksmith", category: "building", type: "building" },
+  { name: "Market", category: "building", type: "building" },
+  { name: "Monastery", category: "building", type: "building" },
+  { name: "University", category: "building", type: "building" },
+  { name: "Watch Tower", category: "building", type: "building" },
+  { name: "Dock", category: "building", type: "building" },
+  { name: "House", category: "building", type: "building" },
+  { name: "Mill", category: "building", type: "building" },
+  { name: "Lumber Camp", category: "building", type: "building" },
+  { name: "Mining Camp", category: "building", type: "building" },
+  { name: "Farm", category: "building", type: "building" },
 ];
 
 export const SightedEntitiesPicker: React.FC = () => {
@@ -77,15 +73,44 @@ export const SightedEntitiesPicker: React.FC = () => {
     removeSightedBuilding,
     clearSightedUnits,
     clearSightedBuildings,
+    civs,
   } = useCoachStore();
 
-  const [activeTab, setActiveTab] = useState<string>("all");
-  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [activeFilter, setActiveFilter] = useState<
+    "all" | "military" | "economy" | "building"
+  >("all");
+  const [db, setDb] = useState<AssetDatabase>({});
+  const [hoveredEntity, setHoveredEntity] = useState<string | null>(null);
+  const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number }>({
+    x: 0,
+    y: 0,
+  });
 
-  const filteredEntities = COMMON_ENTITIES.filter((e) => {
-    const matchesTab = activeTab === "all" || e.category === activeTab;
-    const matchesSearch = e.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesTab && matchesSearch;
+  useEffect(() => {
+    getAssetDatabase().then(setDb);
+  }, []);
+
+  // Check if opponent has unique units to dynamically inject into the grid
+  const opponentCivMeta = civs.find(
+    (c) => c.name.toLowerCase() === snapshot.opponent_civ.toLowerCase()
+  );
+
+  const dynamicEntities = [...TACTICAL_ENTITIES];
+  if (opponentCivMeta && opponentCivMeta.unique_units) {
+    opponentCivMeta.unique_units.forEach((uu) => {
+      if (!dynamicEntities.some((e) => e.name.toLowerCase() === uu.toLowerCase())) {
+        dynamicEntities.unshift({
+          name: uu,
+          category: "military",
+          type: "unit",
+        });
+      }
+    });
+  }
+
+  const filteredEntities = dynamicEntities.filter((e) => {
+    if (activeFilter === "all") return true;
+    return e.category === activeFilter;
   });
 
   const sightedUnitsList = Object.entries(snapshot.sighted_enemy_units);
@@ -94,215 +119,220 @@ export const SightedEntitiesPicker: React.FC = () => {
     sightedUnitsList.reduce((acc, [, c]) => acc + c, 0) +
     sightedBldgsList.reduce((acc, [, c]) => acc + c, 0);
 
-  return (
-    <div className="bg-slate-900/90 border border-slate-800 rounded-xl p-4 sm:p-5 shadow-xl">
-      {/* Header */}
-      <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-800/80">
-        <div className="flex items-center gap-2">
-          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-amber-500/20 text-amber-400 font-bold text-xs border border-amber-500/30">
-            3
-          </span>
-          <h2 className="text-sm font-semibold text-slate-200 tracking-wide uppercase">
-            What Have You Sighted? (Fog of War)
-          </h2>
-        </div>
-        <div className="flex items-center gap-2">
-          {totalSightedCount > 0 && (
-            <button
-              type="button"
-              onClick={() => {
-                clearSightedUnits();
-                clearSightedBuildings();
-              }}
-              className="flex items-center gap-1 text-[11px] text-rose-400 hover:text-rose-300 bg-rose-950/30 hover:bg-rose-950/60 border border-rose-900/40 px-2 py-1 rounded transition-colors"
-            >
-              <Trash2 className="w-3 h-3" />
-              <span>Clear Sighted</span>
-            </button>
-          )}
-          <span className="text-xs font-mono px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-slate-300">
-            {totalSightedCount} Entities
-          </span>
-        </div>
-      </div>
+  const handleEntityClick = (entity: GridEntity) => {
+    if (entity.type === "building") {
+      addSightedBuilding(entity.name, 1);
+    } else {
+      addSightedUnit(entity.name, 1);
+    }
+  };
 
-      {/* Active Sighted Summary Pills */}
-      {totalSightedCount > 0 ? (
-        <div className="mb-4 p-3 bg-slate-950/90 border border-rose-900/40 rounded-xl">
-          <div className="flex items-center gap-1.5 text-xs text-rose-300 font-medium mb-2">
-            <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
-            <span>Observed Opponent Forces:</span>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {sightedUnitsList.map(([uname, count]) => (
-              <div
-                key={uname}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-950/50 border border-rose-800/60 text-rose-200 text-xs font-medium"
-              >
-                <span className="font-bold text-rose-400 font-mono">x{count}</span>
-                <span>{uname}</span>
-                <div className="flex items-center ml-1 gap-0.5">
-                  <button
-                    type="button"
-                    onClick={() => removeSightedUnit(uname, 1)}
-                    className="w-4 h-4 rounded bg-slate-900 hover:bg-rose-800 flex items-center justify-center text-slate-300 hover:text-white"
-                  >
-                    -
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => addSightedUnit(uname, 1)}
-                    className="w-4 h-4 rounded bg-slate-900 hover:bg-rose-800 flex items-center justify-center text-slate-300 hover:text-white"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-            ))}
-            {sightedBldgsList.map(([bname, count]) => (
-              <div
-                key={bname}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-950/50 border border-amber-800/60 text-amber-200 text-xs font-medium"
-              >
-                <Castle className="w-3 h-3 text-amber-400" />
-                <span className="font-bold text-amber-400 font-mono">x{count}</span>
-                <span>{bname}</span>
-                <div className="flex items-center ml-1 gap-0.5">
-                  <button
-                    type="button"
-                    onClick={() => removeSightedBuilding(bname, 1)}
-                    className="w-4 h-4 rounded bg-slate-900 hover:bg-amber-800 flex items-center justify-center text-slate-300 hover:text-white"
-                  >
-                    -
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => addSightedBuilding(bname, 1)}
-                    className="w-4 h-4 rounded bg-slate-900 hover:bg-amber-800 flex items-center justify-center text-slate-300 hover:text-white"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div className="mb-4 py-2.5 px-3 bg-slate-950/50 border border-slate-800/60 rounded-lg text-xs text-slate-400 flex items-center gap-2">
-          <Eye className="w-4 h-4 text-slate-500" />
-          <span>Click any unit or building below to record enemy forces seen in your scouting line of sight.</span>
+  const handleMouseMove = (e: React.MouseEvent, name: string) => {
+    setHoveredEntity(name);
+    setTooltipPos({ x: e.clientX + 12, y: e.clientY + 16 });
+  };
+
+  return (
+    <section className="bg-surface-container parchment-panel p-5 sm:p-6 rounded-lg mb-8 border-outline shadow-sm">
+      {/* Floating Tooltip */}
+      {hoveredEntity && (
+        <div
+          className="fixed pointer-events-none z-50 bg-charcoal-ink text-on-primary px-2.5 py-1 rounded text-xs font-label-tactical shadow-lg border border-gold-leaf whitespace-nowrap"
+          style={{ left: tooltipPos.x, top: tooltipPos.y }}
+        >
+          {hoveredEntity}
         </div>
       )}
 
-      {/* Category Tabs & Quick Search */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mb-3">
-        <div className="flex gap-1 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
-          {[
-            { id: "all", label: "All" },
-            { id: "cavalry", label: "Cavalry" },
-            { id: "archer", label: "Archers" },
-            { id: "infantry", label: "Infantry" },
-            { id: "siege", label: "Siege" },
-            { id: "building", label: "Buildings" },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-colors whitespace-nowrap ${
-                activeTab === tab.id
-                  ? "bg-amber-500 text-slate-950 font-bold"
-                  : "bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+      {/* Section Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-gold-leaf text-on-primary flex items-center justify-center font-headline-md text-sm border border-surface-tint shrink-0">
+            3
+          </div>
+          <h2 className="font-headline-lg text-lg sm:text-2xl text-primary uppercase tracking-wide font-bold">
+            Fog of War: Tactical Grid
+          </h2>
         </div>
-        <input
-          type="text"
-          placeholder="Filter unit or building..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full sm:w-48 bg-slate-950 border border-slate-800 text-xs text-slate-200 px-2.5 py-1 rounded-lg focus:outline-none focus:border-amber-500"
-        />
+
+        {totalSightedCount > 0 && (
+          <button
+            type="button"
+            onClick={() => {
+              clearSightedUnits();
+              clearSightedBuildings();
+            }}
+            className="flex items-center gap-1.5 text-xs text-secondary hover:text-blood-accent bg-surface border border-outline-variant px-3 py-1.5 rounded transition-colors cursor-pointer font-label-tactical"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Clear Sighted ({totalSightedCount})</span>
+          </button>
+        )}
       </div>
 
-      {/* Entity Picker Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 max-h-64 overflow-y-auto pr-1">
+      {/* Observed Forces Container (Active Pill Tags) */}
+      <div className="flex flex-wrap gap-2 mb-4 border-b border-outline-variant pb-4 min-h-[44px] items-center">
+        {totalSightedCount === 0 ? (
+          <p className="text-xs text-on-surface-variant italic font-body-md">
+            No enemy units or structures sighted yet. Click icons below as you scout opponent forces.
+          </p>
+        ) : (
+          <>
+            {sightedUnitsList.map(([name, count]) => {
+              const asset = getAssetFromCatalog(
+                db,
+                name,
+                "unit",
+                snapshot.opponent_civ
+              );
+              return (
+                <button
+                  key={name}
+                  type="button"
+                  onClick={() => removeSightedUnit(name, 1)}
+                  title={`Click to remove 1 ${name}`}
+                  className="observed-item bg-surface border border-secondary text-secondary px-3 py-1 rounded-full text-xs font-label-tactical flex items-center gap-2 shadow-sm relative cursor-pointer"
+                >
+                  {asset?.image ? (
+                    <img
+                      src={asset.image}
+                      alt={name}
+                      className="w-4 h-4 object-contain rounded-sm shrink-0"
+                    />
+                  ) : (
+                    <span className="material-symbols-outlined text-[14px]">
+                      sports_martial_arts
+                    </span>
+                  )}
+                  <span className="font-bold">{name}</span>
+                  <span className="badge bg-secondary text-on-secondary px-1.5 py-0.2 rounded-full text-[10px] font-bold">
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+
+            {sightedBldgsList.map(([name, count]) => {
+              const asset = getAssetFromCatalog(
+                db,
+                name,
+                "building",
+                snapshot.opponent_civ
+              );
+              return (
+                <button
+                  key={name}
+                  type="button"
+                  onClick={() => removeSightedBuilding(name, 1)}
+                  title={`Click to remove 1 ${name}`}
+                  className="observed-item bg-surface border border-outline-variant text-on-surface-variant px-3 py-1 rounded-full text-xs font-label-tactical flex items-center gap-2 shadow-sm relative cursor-pointer opacity-90"
+                >
+                  {asset?.image ? (
+                    <img
+                      src={asset.image}
+                      alt={name}
+                      className="w-4 h-4 object-contain rounded-sm shrink-0"
+                    />
+                  ) : (
+                    <span className="material-symbols-outlined text-[14px]">
+                      account_balance
+                    </span>
+                  )}
+                  <span className="font-bold">{name}</span>
+                  <span className="badge bg-outline-variant text-on-surface px-1.5 py-0.2 rounded-full text-[10px] font-bold">
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </>
+        )}
+      </div>
+
+      {/* Filter Buttons */}
+      <div className="flex gap-2 mb-3">
+        {(
+          [
+            { id: "all", label: "All" },
+            { id: "military", label: "Military" },
+            { id: "economy", label: "Economy" },
+            { id: "building", label: "Buildings" },
+          ] as const
+        ).map((filter) => (
+          <button
+            key={filter.id}
+            type="button"
+            onClick={() => setActiveFilter(filter.id)}
+            className={`px-3 py-1 rounded-full text-xs font-label-tactical transition-colors cursor-pointer ${
+              activeFilter === filter.id
+                ? "bg-outline text-on-primary font-bold shadow-sm"
+                : "bg-surface border border-outline-variant text-on-surface-variant hover:bg-surface-variant"
+            }`}
+          >
+            {filter.label}
+          </button>
+        ))}
+      </div>
+
+      <p className="text-xs text-on-surface-variant mb-3 font-label-tactical">
+        Click to spot opponent forces and structures.
+      </p>
+
+      {/* Grid of Tactical Unit & Building Icons */}
+      <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-1.5 bg-surface-variant p-2.5 rounded border border-outline-variant">
         {filteredEntities.map((entity) => {
-          const isBuilding = entity.category === "building";
-          const count = isBuilding
-            ? snapshot.sighted_enemy_buildings[entity.name] || 0
-            : snapshot.sighted_enemy_units[entity.name] || 0;
+          const asset = getAssetFromCatalog(
+            db,
+            entity.name,
+            entity.type,
+            snapshot.opponent_civ
+          );
+
+          const count =
+            entity.type === "building"
+              ? snapshot.sighted_enemy_buildings[entity.name] || 0
+              : snapshot.sighted_enemy_units[entity.name] || 0;
+
           const isSelected = count > 0;
 
           return (
-            <div
+            <button
               key={entity.name}
-              className={`flex flex-col justify-between p-2 rounded-lg border transition-all text-left ${
+              type="button"
+              onClick={() => handleEntityClick(entity)}
+              onMouseEnter={(e) => handleMouseMove(e, entity.name)}
+              onMouseMove={(e) => handleMouseMove(e, entity.name)}
+              onMouseLeave={() => setHoveredEntity(null)}
+              className={`tactical-unit-icon bg-surface border rounded flex items-center justify-center p-1 aspect-square relative cursor-pointer shadow-2xs ${
                 isSelected
-                  ? isBuilding
-                    ? "bg-amber-950/40 border-amber-500 text-amber-200"
-                    : "bg-rose-950/40 border-rose-500 text-rose-200"
-                  : "bg-slate-950 border-slate-800/80 hover:border-slate-700 text-slate-300"
+                  ? "border-gold-leaf ring-1 ring-gold-leaf bg-surface-container-high"
+                  : "border-outline-variant hover:border-gold-leaf"
               }`}
             >
-              <div className="flex items-start justify-between mb-1">
-                <span className="text-base">{entity.icon}</span>
-                {isSelected && (
-                  <span
-                    className={`text-[10px] font-mono font-bold px-1 rounded ${
-                      isBuilding ? "bg-amber-500 text-slate-950" : "bg-rose-500 text-slate-950"
-                    }`}
-                  >
-                    x{count}
-                  </span>
-                )}
-              </div>
-              <div className="text-[11px] font-semibold truncate mb-2" title={entity.name}>
-                {entity.name}
-              </div>
-              <div className="flex items-center justify-between gap-1 pt-1 border-t border-slate-900">
-                <button
-                  type="button"
-                  onClick={() =>
-                    isBuilding
-                      ? removeSightedBuilding(entity.name, 1)
-                      : removeSightedUnit(entity.name, 1)
-                  }
-                  disabled={count === 0}
-                  className="p-1 rounded bg-slate-900 hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed text-slate-300"
-                >
-                  <Minus className="w-3 h-3" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    isBuilding
-                      ? addSightedBuilding(entity.name, 1)
-                      : addSightedUnit(entity.name, 1)
-                  }
-                  className="flex-1 py-1 rounded bg-slate-900 hover:bg-slate-800 flex items-center justify-center text-amber-400 font-bold text-xs"
-                >
-                  <Plus className="w-3 h-3" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    isBuilding
-                      ? addSightedBuilding(entity.name, 5)
-                      : addSightedUnit(entity.name, 5)
-                  }
-                  className="px-1.5 py-0.5 rounded bg-slate-900 hover:bg-slate-800 text-[10px] font-mono text-amber-400 font-bold"
-                >
-                  +5
-                </button>
-              </div>
-            </div>
+              {asset?.image ? (
+                <img
+                  src={asset.image}
+                  alt={entity.name}
+                  className="w-full h-full object-contain pointer-events-none"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).style.display = "none";
+                  }}
+                />
+              ) : (
+                <span className="material-symbols-outlined text-outline text-lg pointer-events-none">
+                  {entity.type === "building" ? "home" : "swords"}
+                </span>
+              )}
+
+              {isSelected && (
+                <span className="absolute -top-1.5 -right-1.5 bg-secondary text-on-secondary rounded-full text-[9px] font-bold px-1 font-label-tactical shadow-sm">
+                  {count}
+                </span>
+              )}
+            </button>
           );
         })}
       </div>
-    </div>
+    </section>
   );
 };

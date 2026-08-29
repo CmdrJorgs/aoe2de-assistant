@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aoe2-coach
+  labels:
+    app.kubernetes.io/name: aoe2-coach
+    app.kubernetes.io/part-of: aoe2-coach-platform

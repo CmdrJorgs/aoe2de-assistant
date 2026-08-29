@@ -14,7 +14,7 @@ from aoe2_coach.explanation.schemas import (
     ELOTier,
     get_elo_tier,
 )
-from aoe2_coach.rules.tech_tree import get_civ_info
+from aoe2_coach.rules.tech_tree import get_civ_info, is_tech_available
 
 
 class DeterministicFallbackExplainer:
@@ -51,11 +51,17 @@ class DeterministicFallbackExplainer:
         prod_building = mil_plan.recommended_building.replace("_", " ").title()
         b_instruction = f"Produce {primary_unit} from 2-3 {prod_building}s"
 
-        key_techs: List[str] = []
+        raw_techs: List[str] = []
         if mil_plan.rankings and mil_plan.rankings[0].key_technologies:
-            key_techs = [t.replace("_", " ").title() for t in mil_plan.rankings[0].key_technologies]
+            raw_techs = mil_plan.rankings[0].key_technologies
         elif mil_plan.recommended_tech_focus != "none":
-            key_techs = [mil_plan.recommended_tech_focus.replace("_", " ").title()]
+            raw_techs = [mil_plan.recommended_tech_focus]
+
+        key_techs: List[str] = []
+        for t in raw_techs:
+            t_clean = t.lower().replace(" ", "_")
+            if is_tech_available(ctx.player_civ, t_clean):
+                key_techs.append(t.replace("_", " ").title())
 
         counter_exp = counter_res.tactical_summary
 
@@ -141,14 +147,24 @@ class DeterministicFallbackExplainer:
                 f"{spike_reason} Seize map control before enemy reaches counter power spikes."
             )
 
-        # 6. Priority Checklist
+        # 6. Priority Checklist (Calibrated to ELO tier)
         checklist: List[str] = [
             f"1. Produce {primary_unit} from {prod_building}s",
             f"2. Macro: {immediate_action}",
         ]
-        if key_techs:
-            checklist.append(f"3. Research {key_techs[0]} at Blacksmith")
-        checklist.append(f"4. Attack timing: Execute push within {attack_window}")
+        if tier == ELOTier.BEGINNER:
+            # Low ELO: Keep to maximum 3 clear high-impact actions
+            if key_techs:
+                checklist.append(f"3. Research {key_techs[0]} at Blacksmith")
+            else:
+                checklist.append(f"3. Stance: {posture}")
+        else:
+            # Intermediate & Advanced ELO: Full strategic checklist
+            if key_techs:
+                checklist.append(f"3. Research {key_techs[0]}")
+            checklist.append(f"4. Timing: Execute {posture} within {attack_window}")
+            if tier == ELOTier.ADVANCED and micro_tip:
+                checklist.append(f"5. Micro: {micro_tip}")
 
         return CoachingExplanation(
             primary_directive=directive,

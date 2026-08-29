@@ -1,0 +1,8 @@
+name = "aoe2-coach-frontend"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = ".next"
+
+[vars]
+NEXT_PUBLIC_API_URL = "https://api.aoe2coach.ai"
+ENVIRONMENT = "production"

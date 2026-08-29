@@ -1,0 +1,732 @@
+<!DOCTYPE html><html class="light" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>AoE2 Coach AI - War Room</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;family=Noto+Sans:wght@400;700&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "outline-variant": "#d2c5b2",
+                        "outline": "#807666",
+                        "map-forest": "#526D39",
+                        "tertiary-fixed-dim": "#b1d092",
+                        "inverse-on-surface": "#faf0d7",
+                        "on-tertiary-fixed-variant": "#344e1d",
+                        "surface-variant": "#ece2c9",
+                        "primary-container": "#cda351",
+                        "on-primary-container": "#523a00",
+                        "surface-container-high": "#f1e8cf",
+                        "on-surface-variant": "#4e4638",
+                        "secondary": "#aa3527",
+                        "tertiary": "#4b6633",
+                        "secondary-fixed": "#ffdad4",
+                        "surface-container": "#f7edd4",
+                        "background": "#fff8ef",
+                        "parchment-deep": "#E7D8B1",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed-dim": "#edc06b",
+                        "on-tertiary-container": "#2c4516",
+                        "on-background": "#201b0c",
+                        "on-error": "#ffffff",
+                        "secondary-fixed-dim": "#ffb4a8",
+                        "on-error-container": "#93000a",
+                        "error-container": "#ffdad6",
+                        "surface-tint": "#7a5909",
+                        "on-tertiary-fixed": "#0d2000",
+                        "primary": "#7a5909",
+                        "primary-fixed": "#ffdea5",
+                        "on-primary": "#ffffff",
+                        "on-secondary-fixed-variant": "#891d12",
+                        "surface-bright": "#fff8ef",
+                        "on-primary-fixed-variant": "#5d4200",
+                        "on-secondary-fixed": "#410000",
+                        "on-primary-fixed": "#271900",
+                        "on-secondary": "#ffffff",
+                        "on-secondary-container": "#6f0703",
+                        "gold-leaf": "#B8862D",
+                        "tertiary-container": "#95b378",
+                        "on-surface": "#201b0c",
+                        "inverse-primary": "#edc06b",
+                        "surface": "#fff8ef",
+                        "charcoal-ink": "#181C29",
+                        "secondary-container": "#fe725f",
+                        "inverse-surface": "#35301f",
+                        "surface-dim": "#e3d9c1",
+                        "blood-accent": "#8B0000",
+                        "error": "#ba1a1a",
+                        "surface-container-highest": "#ece2c9",
+                        "tertiary-fixed": "#cdedac",
+                        "surface-container-low": "#fdf3da",
+                        "on-tertiary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "margin-mobile": "16px",
+                        "container-max": "1280px",
+                        "margin-desktop": "64px",
+                        "gutter": "24px",
+                        "unit": "8px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["\"Source Serif 4\""],
+                        "display-lg": ["\"Source Serif 4\""],
+                        "headline-lg": ["\"Source Serif 4\""],
+                        "label-tactical": ["JetBrains Mono"],
+                        "body-lg": ["Noto Sans"],
+                        "headline-lg-mobile": ["\"Source Serif 4\""],
+                        "body-md": ["Noto Sans"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "label-tactical": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .parchment-panel {
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.05), 0 4px 6px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        .parchment-panel::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border: 1px solid var(--tw-colors-outline-variant);
+            pointer-events: none;
+            border-radius: inherit;
+        }
+        .input-sunken {
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.08);
+            border: 1px solid var(--tw-colors-outline-variant);
+        }
+        .input-sunken:focus-within {
+            box-shadow: 0 0 0 2px var(--tw-colors-gold-leaf);
+            border-color: transparent;
+        }
+        .hr-decorative {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            color: var(--tw-colors-outline);
+        }
+        .hr-decorative::before, .hr-decorative::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid var(--tw-colors-outline-variant);
+        }
+        .hr-decorative:not(:empty)::before {
+            margin-right: .5em;
+        }
+        .hr-decorative:not(:empty)::after {
+            margin-left: .5em;
+        }
+        
+        /* Subtle interactive hover animations */
+        .hover-expand { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .hover-expand:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
+
+        /* Floating Tooltip */
+        #floating-tooltip {
+            position: fixed;
+            pointer-events: none;
+            z-index: 100;
+            background-color: var(--tw-colors-charcoal-ink);
+            color: var(--tw-colors-on-primary);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            border: 1px solid var(--tw-colors-gold-leaf);
+            opacity: 0;
+            transition: opacity 0.15s ease;
+            transform: translate(10px, 10px);
+            white-space: nowrap;
+        }
+        #floating-tooltip.visible {
+            opacity: 1;
+        }
+        
+        /* Unit Grid Hover */
+        .tactical-unit-icon {
+            transition: all 0.1s ease;
+        }
+        .tactical-unit-icon:hover {
+            transform: scale(1.05);
+            border-color: var(--tw-colors-gold-leaf);
+            box-shadow: 0 0 8px rgba(184, 134, 45, 0.4);
+            z-index: 10;
+        }
+        .tactical-unit-icon:active {
+            transform: scale(0.95);
+        }
+        
+        /* Observed Item Transition */
+        .observed-item {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .observed-item:hover {
+            background-color: var(--tw-colors-error-container);
+            border-color: var(--tw-colors-error);
+            color: var(--tw-colors-error);
+        }
+        .observed-item:hover .badge {
+            background-color: var(--tw-colors-error);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen relative font-body-md selection:bg-gold-leaf selection:text-on-primary">
+<!-- Floating Tooltip -->
+<div class="" id="floating-tooltip" style="left: 1196px; top: 854px;">Castle</div>
+<!-- SideNavBar (Desktop Only based on layout logic, though hidden on md:hidden usually, we'll implement the responsive pivot) -->
+<div class="hidden md:flex h-full w-64 fixed left-0 top-0 bg-surface-container dark:bg-surface-dim text-primary dark:text-primary-fixed-dim bg-parchment-deep border-r border-outline-variant shadow-md flex-col py-8 z-40">
+<div class="px-6 mb-8 flex flex-col items-center">
+</div>
+<div class="px-4 mb-6">
+<button class="w-full bg-charcoal-ink text-on-primary font-label-tactical text-label-tactical font-bold uppercase py-3 border border-gold-leaf hover:bg-blood-accent hover:border-gold-leaf transition-colors duration-200 shadow-sm">
+                RECALCULATE</button>
+<div class="mt-2 text-center font-headline-md text-xs text-on-surface-variant tracking-wider uppercase opacity-70">Confidence Score: 38%</div></div>
+<!-- Tactical Metrics Sidebar Content -->
+<div class="flex-1 flex flex-col gap-4 px-4 mt-2"><!-- Strategy Section -->
+<div class="bg-surface parchment-panel border border-outline-variant rounded p-4 shadow-sm relative group">
+<div class="text-[11px] font-label-tactical text-on-surface-variant mb-1 uppercase tracking-widest font-bold">Current Strategy</div>
+<div class="font-headline-md text-primary leading-tight mb-2">FAST IMPERIAL BOOM</div>
+<div class="font-body-md text-xs text-on-surface-variant leading-relaxed">
+        Exploit your Franks power spike in Castle Age. Sighted enemy forces are vulnerable to Crossbowman. Execute your gatherer rebalance now to support continuous Crossbowman production and strike within the next timing window.
+    </div>
+</div>
+<!-- Military Section -->
+<div class="bg-surface parchment-panel border border-outline-variant rounded p-4 shadow-sm relative group">
+<div class="absolute right-2 top-2">
+<span class="material-symbols-outlined text-outline-variant text-sm cursor-help" title="Identified enemy heavy infantry centered around Berserk. Recommended response, Mass Crossbowman supported by Scorpion from archery range. Focus fire on enemy siege and key high-value units.">info</span>
+</div>
+<div class="text-[11px] font-label-tactical text-on-surface-variant mb-2 uppercase tracking-widest font-bold">Military Focus</div>
+<div class="space-y-2">
+<div class="flex items-center gap-2 text-primary">
+<span class="material-symbols-outlined text-lg">sports_martial_arts</span>
+<span class="font-label-tactical font-bold text-sm">Crossbowman</span>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-lg">precision_manufacturing</span>
+<span class="font-label-tactical text-sm">Scorpion</span>
+</div>
+</div>
+</div>
+<!-- Win Probability -->
+<div class="bg-surface parchment-panel border border-outline-variant rounded p-4 shadow-sm relative overflow-hidden group">
+<div class="absolute right-0 top-0 w-10 h-full bg-surface-variant flex items-center justify-center border-l border-outline-variant opacity-70 group-hover:bg-gold-leaf group-hover:text-on-primary transition-colors">
+<span class="material-symbols-outlined text-gold-leaf group-hover:text-on-primary text-xl">trending_up</span>
+</div>
+<div class="text-[11px] font-label-tactical text-on-surface-variant mb-1 uppercase tracking-widest font-bold">Win Probability</div>
+<div class="font-headline-lg text-headline-md text-primary leading-tight">52% <div class="text-xs font-body-md text-on-surface-variant font-normal mt-1">(even match)</div></div>
+</div>
+<!-- Tactical Stance -->
+<!-- Action Timing -->
+<div class="bg-surface parchment-panel border border-outline-variant rounded p-4 shadow-sm relative overflow-hidden group">
+<div class="absolute right-0 top-0 w-10 h-full bg-surface-variant flex items-center justify-center border-l border-outline-variant opacity-70 group-hover:bg-gold-leaf group-hover:text-on-primary transition-colors">
+<span class="material-symbols-outlined text-gold-leaf group-hover:text-on-primary text-xl">schedule</span>
+</div>
+<div class="text-[11px] font-label-tactical text-on-surface-variant mb-1 uppercase tracking-widest font-bold">Action Timing</div>
+<div class="font-label-tactical text-primary font-bold pr-8 leading-snug">Next 3 minutes<div class="text-[10px] font-body-md text-secondary mt-1 font-normal leading-tight">Enemy Castle Age Knight HP increase incoming, strike now.</div></div>
+</div>
+<!-- Health Section -->
+<div class="bg-surface parchment-panel border border-outline-variant rounded p-4 shadow-sm relative group">
+<div class="absolute right-2 top-2">
+<span class="material-symbols-outlined text-outline-variant text-sm cursor-help" title="Balance your eco to produce army continuously from all military buildings without floating excess stockpiles.">info</span>
+</div>
+<div class="text-[11px] font-label-tactical text-on-surface-variant mb-2 uppercase tracking-widest font-bold">Eco Health</div>
+<div class="flex items-center gap-4 mb-3">
+<div class="text-4xl font-headline-lg text-secondary">C</div>
+<div class="grid grid-cols-2 gap-1 flex-1">
+<div class="text-[10px] font-label-tactical text-tertiary bg-surface-variant px-1 rounded">F +3</div>
+<div class="text-[10px] font-label-tactical text-secondary bg-surface-variant px-1 rounded">W -3</div>
+<div class="text-[10px] font-label-tactical text-tertiary bg-surface-variant px-1 rounded">G +1</div>
+<div class="text-[10px] font-label-tactical text-secondary bg-surface-variant px-1 rounded">S -1</div>
+</div>
+</div>
+</div>
+<!-- Checklist Section -->
+<div class="bg-surface parchment-panel border border-outline-variant rounded p-4 shadow-sm">
+<div class="text-[11px] font-label-tactical text-on-surface-variant mb-2 uppercase tracking-widest font-bold">Command Checklist</div>
+<ul class="space-y-2">
+<li class="flex items-start gap-2 text-xs font-body-md text-on-surface">
+<span class="material-symbols-outlined text-sm mt-0.5">check_box_outline_blank</span>
+<span class="">Produce Crossbowman from 2-3 Barracks</span>
+</li>
+<li class="flex items-start gap-2 text-xs font-body-md text-on-surface">
+<span class="material-symbols-outlined text-sm mt-0.5">check_box_outline_blank</span>
+<span class="">Add 3 more villagers to Food</span>
+</li>
+<li class="flex items-start gap-2 text-xs font-body-md text-on-surface">
+<span class="material-symbols-outlined text-sm mt-0.5">check_box_outline_blank</span>
+<span class="">Research Scale Mail Armor at Blacksmith</span>
+</li>
+</ul>
+</div></div>
+</div>
+<!-- Main Content Area -->
+<main class="md:ml-64 min-h-screen flex flex-col">
+<!-- TopAppBar (Hidden on desktop if SideNav is present, but spec says use it. We will use it as a top header for the canvas area) -->
+<header class="bg-background dark:bg-inverse-surface text-primary dark:text-primary-fixed-dim bg-parchment-deep border-b border-outline-variant shadow-sm flex justify-between items-center w-full px-6 py-4 sticky top-0 z-30">
+<div class="flex items-center gap-4">
+<div class="font-headline-lg text-headline-lg font-bold text-gold-leaf dark:text-primary-fixed md:hidden">AoE2 Coach AI</div>
+<div class="hidden md:flex gap-6 items-center">
+<a class="text-secondary dark:text-secondary-fixed border-b-2 border-gold-leaf pb-1 font-headline-md text-headline-md scale-95 transition-transform hover:text-blood-accent transition-colors duration-200" href="#">War Room</a>
+<a class="text-on-surface-variant dark:text-outline font-headline-md text-headline-md hover:text-blood-accent transition-colors duration-200" href="#">History</a>
+<a class="text-on-surface-variant dark:text-outline font-headline-md text-headline-md hover:text-blood-accent transition-colors duration-200" href="#">Tactics</a>
+<div class="w-px h-6 bg-outline-variant mx-2"></div>
+<a class="text-on-surface-variant dark:text-outline font-headline-md text-headline-md hover:text-blood-accent transition-colors duration-200 flex items-center gap-2" href="#">
+<span class="material-symbols-outlined text-[20px]">menu_book</span> Codex
+</a>
+<a class="text-on-surface-variant dark:text-outline font-headline-md text-headline-md hover:text-blood-accent transition-colors duration-200 flex items-center gap-2" href="#">
+<span class="material-symbols-outlined text-[20px]">help_center</span> Support
+</a>
+</div>
+</div>
+<div class="flex items-center gap-4 text-on-surface-variant">
+<button class="hover:text-blood-accent transition-colors duration-200 p-2"><span class="material-symbols-outlined">settings</span></button>
+<button class="hover:text-blood-accent transition-colors duration-200 p-2"><span class="material-symbols-outlined">history_edu</span></button>
+<img alt="Royal Tactician Profile" class="w-10 h-10 rounded-full border border-gold-leaf ml-2 object-cover" data-alt="A small circular portrait of a stoic medieval king adorned in subtle gold finery, set against a dark textured background, evoking an Age of Empires tactician's profile image." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCGbI09pZEdLZJhb2Z8rEZw-OtAUu0a0BvBSnPWAnJp8ZIZm8ieio6T94s1VWppqaWb7pGpNDWtNcIzOzlku-DivbgYOXrQSdTsinZHoBwlWf2IowZKrw3sQnYoH9dvTA05HkoGSqn8zFIlaFCBrthr7sVaUogWlR2EP6gAVRZU2v_qzNiN9DknzQAMBXlEo0eWqMe8uCjyMriH4FZB6Pe9-S_L3jcIxhfghUf6YTtrJmHLTWBJ-hcIXA">
+</div>
+</header>
+<!-- Canvas / Dashboard Content -->
+<div class="flex-1 p-margin-mobile md:p-gutter max-w-container-max mx-auto w-full space-y-gutter pb-24 md:pb-gutter">
+<!-- Mobile Tactical Metrics (Hidden on Desktop) -->
+<div class="md:hidden grid grid-cols-1 sm:grid-cols-3 gap-4 mb-2">
+<div class="bg-surface parchment-panel p-4 rounded-lg shadow-sm border border-outline-variant flex justify-between items-center relative overflow-hidden">
+<div class="z-10">
+<div class="text-[10px] font-label-tactical text-on-surface-variant uppercase tracking-wider font-bold">Win Probability</div>
+<div class="font-headline-md text-primary mt-1">52% <span class="text-xs font-body-md text-on-surface-variant font-normal">(even)</span></div>
+</div>
+<span class="material-symbols-outlined text-gold-leaf text-3xl opacity-30 absolute right-4">trending_up</span>
+</div>
+<div class="bg-surface parchment-panel p-4 rounded-lg shadow-sm border border-outline-variant flex justify-between items-center relative overflow-hidden">
+<div class="z-10">
+<div class="text-[10px] font-label-tactical text-on-surface-variant uppercase tracking-wider font-bold">Tactical Stance</div>
+<div class="font-label-tactical text-primary font-bold mt-1 text-xs">FAST IMPERIAL BOOM</div>
+</div>
+<span class="material-symbols-outlined text-gold-leaf text-3xl opacity-30 absolute right-4">bolt</span>
+</div>
+<div class="bg-surface parchment-panel p-4 rounded-lg shadow-sm border border-outline-variant flex justify-between items-center relative overflow-hidden">
+<div class="z-10">
+<div class="text-[10px] font-label-tactical text-on-surface-variant uppercase tracking-wider font-bold">Action Timing</div>
+<div class="font-label-tactical text-primary font-bold mt-1 text-xs">Next 3 mins</div>
+</div>
+<span class="material-symbols-outlined text-gold-leaf text-3xl opacity-30 absolute right-4">schedule</span>
+</div>
+</div>
+<!-- 30-Second Mid-Game Wizard -->
+
+<!-- MATCH CONTEXT & SETUP -->
+<section class="bg-surface-container parchment-panel p-6 rounded-lg">
+<div class="flex items-center justify-between mb-6">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-gold-leaf text-on-primary flex items-center justify-center font-headline-md text-sm border border-surface-tint">1</div>
+<h2 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-primary uppercase tracking-wide">Match Context &amp; Setup</h2>
+</div>
+<div class="font-label-tactical text-label-tactical text-on-surface-variant bg-surface-variant px-3 py-1 border border-outline-variant rounded">Franks vs Vikings</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+<!-- Your Civ -->
+<div class="space-y-2">
+<label class="flex items-center gap-2 font-label-tactical text-label-tactical text-on-surface">
+<span class="material-symbols-outlined text-sm text-gold-leaf">account_circle</span> Your Civilization
+                        </label>
+<div class="input-sunken bg-surface flex items-center px-3 py-2 rounded"><div class="flex items-center gap-2 w-full cursor-pointer">
+<img alt="Franks" class="w-6 h-6 object-cover rounded-sm" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDCZWg3A2q28yB98lABAf5uvprjlvxVPIeltG5bJki3GXEgubI6KrXHbPEsFYE0eVYulGS2JQ9QaM1wAI6Zm9aOEvkc869cCsPsA3qbkew6LyJszyhWosHeIYcfWyKiIvI9Dl37zy4LSqms8jJlObL5Az6QEiotqdHyviBlc2-2cA83shOE8aBnBP2HqSlIo1n-m5JLhe0-hSKupqSLYBXOWpSgfV6-91Zbt94SmF7I8KDQE4JBsUxhh58AKnKFOxJhM2g">
+<span class="flex-1 text-primary font-body-md">Franks</span>
+<span class="material-symbols-outlined text-outline-variant">expand_more</span>
+</div></div>
+</div>
+<!-- Opponent Civ -->
+<div class="space-y-2">
+<label class="flex items-center gap-2 font-label-tactical text-label-tactical text-on-surface">
+<span class="material-symbols-outlined text-sm text-secondary">target</span> Opponent Civilization
+                        </label>
+<div class="input-sunken bg-surface flex items-center px-3 py-2 rounded"><div class="flex items-center gap-2 w-full cursor-pointer">
+<img alt="Vikings" class="w-6 h-6 object-cover rounded-sm" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD17dkrd3K0U_GXUOXq2UZNQ8JE3tdK4J2eP2gaKV3dlIPOUntA97KbDSfvZeRvn4NJzRoqQ1uTyNhmduZxOAnzPONFGqbBOtNgNmETjBCz5KDKLvCIcaESV9pVn7RAde0ZIgs-T3pBkZxnwfz-D5iIngFpdfzQDMZPKv6v8UCGtQ9RE8gH5YXpzrsc1POl15DSir6KNy-csTeZrnGYXj9sq7KEB_c0KX2QAcp_AFFrAGhWwoZSJn3X0ZNI6TV1g_di3-U">
+<span class="flex-1 text-primary font-body-md">Vikings</span>
+<span class="material-symbols-outlined text-outline-variant">expand_more</span>
+</div></div>
+</div>
+<!-- Player ELO -->
+<div class="space-y-2">
+<div class="flex justify-between items-center">
+<label class="flex items-center gap-2 font-label-tactical text-label-tactical text-on-surface">
+<span class="material-symbols-outlined text-sm text-primary">emoji_events</span> Player ELO
+                            </label>
+<span class="font-label-tactical text-gold-leaf font-bold">800</span>
+</div>
+<div class="flex gap-1">
+<div class="input-sunken bg-surface px-3 py-2 rounded flex items-center justify-center font-label-tactical text-label-tactical text-primary h-10 w-full">800</div>
+</div>
+</div>
+<!-- Game Time -->
+<div class="space-y-2">
+<div class="flex justify-between items-center">
+<label class="flex items-center gap-2 font-label-tactical text-label-tactical text-on-surface">
+<span class="material-symbols-outlined text-sm text-tertiary">schedule</span> Game Time
+                            </label>
+<span class="font-label-tactical text-tertiary font-bold">22:30</span>
+</div>
+<div class="flex items-center gap-3 h-10">
+<input class="w-full accent-tertiary h-2 bg-outline-variant rounded-full appearance-none cursor-pointer" type="range">
+<button class="bg-surface-variant text-on-surface-variant border border-outline-variant text-xs px-2 py-1 rounded-sm">-1m</button>
+<button class="bg-surface-variant text-on-surface-variant border border-outline-variant text-xs px-2 py-1 rounded-sm">+1m</button>
+</div>
+</div>
+</div>
+<div class="hr-decorative mb-6"></div>
+<!-- Current Game Age -->
+<div class="space-y-3">
+<label class="flex items-center gap-2 font-label-tactical text-label-tactical text-on-surface">
+<span class="material-symbols-outlined text-sm text-primary">shield</span> Current Game Age
+                    </label>
+<div class="flex w-full rounded-lg overflow-hidden border border-outline-variant shadow-sm">
+<button class="flex-1 bg-surface text-on-surface-variant py-3 flex items-center justify-center gap-2 font-body-md hover:bg-surface-variant transition-colors relative" style="clip-path: polygon(0% 0%, 90% 0%, 100% 50%, 90% 100%, 0% 100%); padding-right: 1.5rem;"><img alt="Dark Age" class="w-6 h-6 object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAOum3urIIOT5LRBudFjP_yWNASUaMm7EZh4FmlpU1xpNFH8ILx8xlqDY5-nxiuWzDTh2ZiAz0xH3FjrarptZehsLzhWx6ion7WAc-38OvCHxnD1pYcyq5752wPDKP9_9X_T7kS765NTEZszfGEdlShfYbiAkVSuOO_4K8QVWkEL5bn-_Z8yo_5CY800cBz6rVcIa4IFY23c9QMHvvLVvrwnKAF6R-q__RIcYFcUd7h6kcFQLz4VzdUKrb0mFvUe7dv-vI"> <span class="hidden md:inline">Dark Age</span></button>
+<button class="flex-1 bg-surface text-on-surface-variant py-3 flex items-center justify-center gap-2 font-body-md hover:bg-surface-variant transition-colors relative" style="clip-path: polygon(90% 0%, 100% 50%, 90% 100%, 0% 100%, 10% 50%, 0% 0%); margin-left: -2%; padding-left: 1.5rem; padding-right: 1.5rem;"><img alt="Feudal Age" class="w-6 h-6 object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC8qWNq_-kkB0mJhznKDQMoYp2DrfQASmkHTkCFoptmBpJIYJ35b6AdiwIvqgjZc0hAbPOu-POrOZexVDWzN-PC9urczcEeAwItTPxpnUNzLVmYIIwOU-xsaa0Ky26UewWMEUWNdacBl7L5S6hx-BEKWMJ3lXVjdRUSkSIKuROkUOltcNwFWsQz8spmAhFvdg_DRlLlqAbBW7d8wHMxpeyNpw0r450iWzol2aRtONIeALYkdOxGASoAETFLd4dhg68Hv0U"> <span class="hidden md:inline">Feudal Age</span></button>
+<button class="flex-1 bg-parchment-deep text-primary font-bold py-3 flex items-center justify-center gap-2 font-body-md relative" style="clip-path: polygon(90% 0%, 100% 50%, 90% 100%, 0% 100%, 10% 50%, 0% 0%); margin-left: -2%; padding-left: 1.5rem; padding-right: 1.5rem;"><div class="absolute inset-0 bg-gold-leaf opacity-20"></div><img alt="Castle Age" class="w-6 h-6 object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBYaXRKNp8v7KWxJjMiINusIxDvfp2bW77dpgoYf5ndGE-rahhW0E9s2R_EVbjljQ-7gEtV0xwMbYA6iSRRLA75ON1vFCCzDjFSfynPlV4rGfu0l6C7Ldx6qSG4jUzUCHfuYrvROtYsFEAEt66R0PlYOcP_NOo0zNuxsQqbzbJbke0Pt2yEqqrjN0N2Qkr0SBlUnYXG9UT_fRnetJhU2GoT5Ty3-8EToWS0e-FWybLlLoL4gxHHFaWi6v1C7VW-ICx7qaU"> <span class="hidden md:inline">Castle Age</span></button>
+<button class="flex-1 bg-surface text-on-surface-variant py-3 flex items-center justify-center gap-2 font-body-md opacity-50 cursor-not-allowed relative" style="clip-path: polygon(100% 0%, 100% 100%, 0% 100%, 10% 50%, 0% 0%); margin-left: -2%; padding-left: 1.5rem;"><img alt="Imperial Age" class="w-6 h-6 object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAMAUREzhLPafUkaRuW7lwXqo9YPNgBcXUFRV5X8pjTArxWrH9GUNxee2qMrLMbYO0AVGB1-DcKT4ESTY1toOx9LKAqvbVYb0dkg3KrudlI2fFbsy79ByYQvqSpTZHJHC_kybH77vBAgs2O_PgiuexuRF49hWEj9qLcnP2D4Krd3r7WGGcLryfMUvAV0RQbaM2dA-OEzfgHQ_Uvr5fg3AMRgy7JmYEF6lc3PYafP-zL_h1Ac693Bau25GLKKtQHNsnH9ro"> <span class="hidden md:inline">Imperial Age</span></button>
+</div>
+</div>
+</section>
+<!-- FOG OF WAR: TACTICAL GRID -->
+<!-- LIVE ECONOMY & STOCKPILE -->
+<section class="bg-surface-container parchment-panel p-6 rounded-lg">
+<div class="flex items-center justify-between mb-6 border-b border-outline-variant pb-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-gold-leaf text-on-primary flex items-center justify-center font-headline-md text-sm border border-surface-tint">2</div>
+<h2 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-primary uppercase tracking-wide">Live Economy &amp; Stockpile</h2>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+<!-- Food Card -->
+<div class="bg-surface border border-outline-variant p-4 rounded hover-expand">
+<div class="flex justify-between items-center mb-4 border-b border-outline-variant pb-2">
+<div class="flex items-center gap-2 font-headline-md text-secondary">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: &quot;FILL&quot; 1;">restaurant</span> FOOD
+                            </div>
+<span class="text-xs bg-surface-variant text-on-surface-variant px-2 py-1 rounded-sm border border-outline-variant">29% eco</span>
+</div>
+<div class="space-y-4">
+<div>
+<label class="text-xs text-on-surface-variant mb-1 block">Current Bank</label>
+<div class="flex gap-2">
+<button class="bg-surface-variant border border-outline-variant px-3 rounded text-on-surface-variant text-sm hover:bg-outline-variant">-100</button>
+<div class="input-sunken bg-surface-bright flex-1 px-3 py-2 rounded text-secondary font-label-tactical font-bold text-center">320</div>
+<button class="bg-surface-variant border border-outline-variant px-3 rounded text-on-surface-variant text-sm hover:bg-outline-variant">+100</button>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-xs text-on-surface-variant mb-1">
+<label class="">Farmers / Gatherers</label>
+</div>
+<div class="flex gap-2">
+<button class="bg-surface-variant border border-outline-variant px-3 py-1 rounded text-on-surface-variant text-sm hover:bg-outline-variant">-1</button>
+<div class="input-sunken bg-surface-bright flex-1 px-3 py-1 rounded text-primary font-label-tactical font-bold text-center">14</div>
+<button class="bg-surface-variant border border-outline-variant px-3 py-1 rounded text-on-surface-variant text-sm hover:bg-outline-variant">+1</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Wood Card -->
+<div class="bg-surface border border-outline-variant p-4 rounded hover-expand">
+<div class="flex justify-between items-center mb-4 border-b border-outline-variant pb-2">
+<div class="flex items-center gap-2 font-headline-md text-tertiary">
+<span class="material-symbols-outlined text-tertiary" style="font-variation-settings: &quot;FILL&quot; 1;">forest</span> WOOD
+                            </div>
+<span class="text-xs bg-surface-variant text-on-surface-variant px-2 py-1 rounded-sm border border-outline-variant">54% eco</span>
+</div>
+<div class="space-y-4">
+<div>
+<label class="text-xs text-on-surface-variant mb-1 block">Current Bank</label>
+<div class="flex gap-2">
+<button class="bg-surface-variant border border-outline-variant px-3 rounded text-on-surface-variant text-sm hover:bg-outline-variant">-100</button>
+<div class="input-sunken bg-surface-bright flex-1 px-3 py-2 rounded text-tertiary font-label-tactical font-bold text-center">750</div>
+<button class="bg-surface-variant border border-outline-variant px-3 rounded text-on-surface-variant text-sm hover:bg-outline-variant">+100</button>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-xs text-on-surface-variant mb-1">
+<label class="">Lumberjacks</label>
+</div>
+<div class="flex gap-2">
+<button class="bg-surface-variant border border-outline-variant px-3 py-1 rounded text-on-surface-variant text-sm hover:bg-outline-variant">-1</button>
+<div class="input-sunken bg-surface-bright flex-1 px-3 py-1 rounded text-primary font-label-tactical font-bold text-center">26</div>
+<button class="bg-surface-variant border border-outline-variant px-3 py-1 rounded text-on-surface-variant text-sm hover:bg-outline-variant">+1</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Gold Card -->
+<div class="bg-surface border border-outline-variant p-4 rounded hover-expand">
+<div class="flex justify-between items-center mb-4 border-b border-outline-variant pb-2">
+<div class="flex items-center gap-2 font-headline-md text-gold-leaf">
+<span class="material-symbols-outlined text-gold-leaf" style="font-variation-settings: &quot;FILL&quot; 1;">monetization_on</span> GOLD
+                            </div>
+<span class="text-xs bg-surface-variant text-on-surface-variant px-2 py-1 rounded-sm border border-outline-variant">13% eco</span>
+</div>
+<div class="space-y-4">
+<div>
+<label class="text-xs text-on-surface-variant mb-1 block">Current Bank</label>
+<div class="flex gap-2">
+<button class="bg-surface-variant border border-outline-variant px-3 rounded text-on-surface-variant text-sm hover:bg-outline-variant">-100</button>
+<div class="input-sunken bg-surface-bright flex-1 px-3 py-2 rounded text-gold-leaf font-label-tactical font-bold text-center">120</div>
+<button class="bg-surface-variant border border-outline-variant px-3 rounded text-on-surface-variant text-sm hover:bg-outline-variant">+100</button>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-xs text-on-surface-variant mb-1">
+<label class="">Gold Miners</label>
+</div>
+<div class="flex gap-2">
+<button class="bg-surface-variant border border-outline-variant px-3 py-1 rounded text-on-surface-variant text-sm hover:bg-outline-variant">-1</button>
+<div class="input-sunken bg-surface-bright flex-1 px-3 py-1 rounded text-primary font-label-tactical font-bold text-center">6</div>
+<button class="bg-surface-variant border border-outline-variant px-3 py-1 rounded text-on-surface-variant text-sm hover:bg-outline-variant">+1</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Stone Card -->
+<div class="bg-surface border border-outline-variant p-4 rounded hover-expand">
+<div class="flex justify-between items-center mb-4 border-b border-outline-variant pb-2">
+<div class="flex items-center gap-2 font-headline-md text-outline">
+<span class="material-symbols-outlined text-outline" style="font-variation-settings: &quot;FILL&quot; 1;">landscape</span> STONE
+                            </div>
+<span class="text-xs bg-surface-variant text-on-surface-variant px-2 py-1 rounded-sm border border-outline-variant">4% eco</span>
+</div>
+<div class="space-y-4">
+<div>
+<label class="text-xs text-on-surface-variant mb-1 block">Current Bank</label>
+<div class="flex gap-2">
+<button class="bg-surface-variant border border-outline-variant px-3 rounded text-on-surface-variant text-sm hover:bg-outline-variant">-100</button>
+<div class="input-sunken bg-surface-bright flex-1 px-3 py-2 rounded text-outline font-label-tactical font-bold text-center">450</div>
+<button class="bg-surface-variant border border-outline-variant px-3 rounded text-on-surface-variant text-sm hover:bg-outline-variant">+100</button>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-xs text-on-surface-variant mb-1">
+<label class="">Stone Miners</label>
+</div>
+<div class="flex gap-2">
+<button class="bg-surface-variant border border-outline-variant px-3 py-1 rounded text-on-surface-variant text-sm hover:bg-outline-variant">-1</button>
+<div class="input-sunken bg-surface-bright flex-1 px-3 py-1 rounded text-primary font-label-tactical font-bold text-center">2</div>
+<button class="bg-surface-variant border border-outline-variant px-3 py-1 rounded text-on-surface-variant text-sm hover:bg-outline-variant">+1</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Idle Villagers -->
+<div class="bg-surface border border-outline-variant p-4 rounded hover-expand w-full mb-6">
+<div class="flex justify-between items-center mb-4 border-b border-outline-variant pb-2">
+<div class="flex items-center gap-2 font-headline-md text-slate-400">
+<span class="material-symbols-outlined text-slate-400" style="font-variation-settings: &quot;FILL&quot; 1;">person_off</span> IDLE VILLAGERS
+</div>
+</div>
+<div class="flex gap-2 max-w-xs">
+<button class="bg-surface-variant border border-outline-variant px-4 py-2 rounded text-on-surface-variant font-label-tactical hover:bg-outline-variant">-1</button>
+<div class="input-sunken bg-surface-bright flex-1 px-4 py-2 rounded text-primary font-label-tactical font-bold text-center flex items-center justify-center">0</div>
+<button class="bg-surface-variant border border-outline-variant px-4 py-2 rounded text-on-surface-variant font-label-tactical hover:bg-outline-variant">+1</button>
+</div>
+</div>
+<div class="pt-6 border-t border-outline-variant">
+<div class="flex justify-between text-sm font-label-tactical text-on-surface-variant mb-2">
+<span class="">Villager Distribution Breakdown</span>
+<span class="font-bold">14F / 26W / 6G / 2S / 0I</span>
+</div>
+<div class="h-3 w-full flex rounded-full overflow-hidden border border-outline-variant shadow-inner">
+<div class="bg-secondary h-full" style="width: 29%"></div>
+<div class="bg-tertiary h-full" style="width: 54%"></div>
+<div class="bg-gold-leaf h-full" style="width: 13%"></div>
+<div class="bg-outline h-full" style="width: 4%"></div>
+<div class="bg-slate-400 h-full" style="width: 0%"></div>
+</div>
+</div>
+</section><section class="bg-surface-container parchment-panel p-6 rounded-lg mb-8 border-outline shadow-sm shadow-md">
+<div class="flex items-center justify-between mb-6">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-gold-leaf text-on-primary flex items-center justify-center font-headline-md text-sm border border-surface-tint">3</div>
+<h2 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-primary uppercase tracking-wide">Fog of War: Tactical Grid</h2>
+</div>
+</div>
+<div class="flex flex-wrap gap-2 mb-4 border-b border-outline-variant pb-4" id="observed-forces-container">
+<div class="observed-item bg-surface border border-secondary text-secondary px-3 py-1 rounded-full text-xs font-label-tactical flex items-center gap-2 shadow-sm relative" data-id="Archer" onclick="decrementObservedUnit(this, 'Archer')">
+<span class="material-symbols-outlined text-[14px]">sports_martial_arts</span> <span class="unit-name">Archer</span>
+<span class="badge bg-secondary text-on-secondary px-1.5 rounded-full text-[10px] font-bold">4</span>
+</div>
+<div class="observed-item bg-surface border border-outline-variant text-on-surface-variant px-3 py-1 rounded-full text-xs font-label-tactical flex items-center gap-2 shadow-sm relative opacity-70" data-id="Town Center" onclick="decrementObservedUnit(this, 'Town Center')">
+<span class="material-symbols-outlined text-[14px]">account_balance</span> <span class="unit-name">Town Center</span>
+<span class="badge bg-outline-variant text-on-surface px-1.5 rounded-full text-[10px] font-bold">1</span>
+</div>
+</div>
+<div class="flex gap-2 mb-4">
+<button class="bg-outline text-on-primary px-3 py-1 rounded-full text-xs font-label-tactical">All</button>
+<button class="bg-surface border border-outline-variant text-on-surface-variant px-3 py-1 rounded-full text-xs font-label-tactical hover:bg-surface-variant transition-colors">Military</button>
+<button class="bg-surface border border-outline-variant text-on-surface-variant px-3 py-1 rounded-full text-xs font-label-tactical hover:bg-surface-variant transition-colors">Economy</button>
+<button class="bg-surface border border-outline-variant text-on-surface-variant px-3 py-1 rounded-full text-xs font-label-tactical hover:bg-surface-variant transition-colors">Buildings</button>
+</div>
+<p class="text-xs text-on-surface-variant mb-4 font-label-tactical">Click to spot opponent forces and structures.</p>
+<div class="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-1 bg-surface-variant p-2 rounded border border-outline-variant">
+<button class="tactical-unit-icon bg-surface border border-outline-variant rounded flex items-center justify-center p-1 aspect-square relative" data-unit="Militia" onclick="addObservedUnit('Militia', 'swords')"><span class="material-symbols-outlined text-outline">swords</span></button>
+<button class="tactical-unit-icon bg-surface border border-outline-variant rounded flex items-center justify-center p-1 aspect-square relative" data-unit="Spearman" onclick="addObservedUnit('Spearman', 'stat_minus_1')"><span class="material-symbols-outlined text-outline">stat_minus_1</span></button>
+<button class="tactical-unit-icon bg-surface border border-outline-variant rounded flex items-center justify-center p-1 aspect-square relative" data-unit="Eagle Scout" onclick="addObservedUnit('Eagle Scout', 'visibility')"><span class="material-symbols-outlined text-outline">visibility</span></button>
+<button class="tactical-unit-icon bg-surface border border-outline-variant rounded flex items-center justify-center p-1 aspect-square relative" data-unit="Archer" onclick="addObservedUnit('Archer', 'sports_martial_arts')"><span class="material-symbols-outlined text-outline">sports_martial_arts</span></button>
+<button class="tactical-unit-icon bg-surface border border-outline-variant rounded flex items-center justify-center p-1 aspect-square relative" data-unit="Skirmisher" onclick="addObservedUnit('Skirmisher', 'shield')"><span class="material-symbols-outlined text-outline">shield</span></button>
+<button class="tactical-unit-icon bg-surface border border-outline-variant rounded flex items-center justify-center p-1 aspect-square relative" data-unit="Cavalry Archer" onclick="addObservedUnit('Cavalry Archer', 'cruelty_free')"><span class="material-symbols-outlined text-outline">cruelty_free</span></button>
+<button class="tactical-unit-icon bg-surface border border-outline-variant rounded flex items-center justify-center p-1 aspect-square relative" data-unit="Scout Cavalry" onclick="addObservedUnit('Scout Cavalry', 'pets')"><span class="material-symbols-outlined text-outline">pets</span></button>
+<button class="tactical-unit-icon bg-surface border border-outline-variant rounded flex items-center justify-center p-1 aspect-square relative" data-unit="Knight" onclick="addObservedUnit('Knight', 'gavel')"><span class="material-symbols-outlined text-outline">gavel</span></button>
+<button class="tactical-unit-icon bg-surface border border-outline-variant rounded flex items-center justify-center p-1 aspect-square relative" data-unit="Camel" onclick="addObservedUnit('Camel', 'water_drop')"><span class="material-symbols-outlined text-outline">water_drop</span></button>
+<button class="tactical-unit-icon bg-surface border border-outline-variant rounded flex items-center justify-center p-1 aspect-square relative" data-unit="Battering Ram" onclick="addObservedUnit('Battering Ram', 'carpenter')"><span class="material-symbols-outlined text-outline">carpenter</span></button>
+<button class="tactical-unit-icon bg-surface border border-outline-variant rounded flex items-center justify-center p-1 aspect-square relative" data-unit="Mangonel" onclick="addObservedUnit('Mangonel', 'landscape')"><span class="material-symbols-outlined text-outline">landscape</span></button>
+<button class="tactical-unit-icon bg-surface border border-outline-variant rounded flex items-center justify-center p-1 aspect-square relative" data-unit="Castle" onclick="addObservedUnit('Castle', 'castle')"><span class="material-symbols-outlined text-outline">castle</span></button>
+<button class="tactical-unit-icon bg-surface border border-outline-variant rounded flex items-center justify-center p-1 aspect-square relative" data-unit="Trebuchet" onclick="addObservedUnit('Trebuchet', 'precision_manufacturing')"><span class="material-symbols-outlined text-outline">precision_manufacturing</span></button>
+<button class="tactical-unit-icon bg-surface border border-outline-variant rounded flex items-center justify-center p-1 aspect-square relative" data-unit="Petard" onclick="addObservedUnit('Petard', 'local_fire_department')"><span class="material-symbols-outlined text-outline">local_fire_department</span></button>
+<button class="tactical-unit-icon bg-surface border border-outline-variant rounded flex items-center justify-center p-1 aspect-square relative" data-unit="Monk" onclick="addObservedUnit('Monk', 'auto_awesome')"><span class="material-symbols-outlined text-outline">auto_awesome</span></button>
+<button class="tactical-unit-icon bg-surface border border-outline-variant rounded flex items-center justify-center p-1 aspect-square relative" data-unit="Villager" onclick="addObservedUnit('Villager', 'person')"><span class="material-symbols-outlined text-outline">person</span></button>
+<button class="tactical-unit-icon bg-surface border border-outline-variant rounded flex items-center justify-center p-1 aspect-square relative" data-unit="Trade Cart" onclick="addObservedUnit('Trade Cart', 'shopping_cart')"><span class="material-symbols-outlined text-outline">shopping_cart</span></button>
+<button class="tactical-unit-icon bg-surface border border-outline-variant rounded flex items-center justify-center p-1 aspect-square relative" data-unit="Fishing Ship" onclick="addObservedUnit('Fishing Ship', 'sailing')"><span class="material-symbols-outlined text-outline">sailing</span></button>
+<button class="tactical-unit-icon bg-surface border border-outline-variant rounded flex items-center justify-center p-1 aspect-square relative" data-unit="Transport Ship" onclick="addObservedUnit('Transport Ship', 'directions_boat')"><span class="material-symbols-outlined text-outline">directions_boat</span></button>
+<button class="tactical-unit-icon bg-surface border border-outline-variant rounded flex items-center justify-center p-1 aspect-square relative" data-unit="Galley" onclick="addObservedUnit('Galley', 'kayaking')"><span class="material-symbols-outlined text-outline">kayaking</span></button>
+<button class="tactical-unit-icon bg-surface border border-outline-variant rounded flex items-center justify-center p-1 aspect-square relative" data-unit="Demolition Ship" onclick="addObservedUnit('Demolition Ship', 'warning')"><span class="material-symbols-outlined text-outline">warning</span></button>
+<button class="tactical-unit-icon bg-surface border border-outline-variant rounded flex items-center justify-center p-1 aspect-square relative" data-unit="Fire Ship" onclick="addObservedUnit('Fire Ship', 'local_fire_department')"><span class="material-symbols-outlined text-outline">local_fire_department</span></button>
+<button class="tactical-unit-icon bg-surface border border-outline-variant rounded flex items-center justify-center p-1 aspect-square relative" data-unit="House" onclick="addObservedUnit('House', 'home')"><span class="material-symbols-outlined text-outline">home</span></button>
+<button class="tactical-unit-icon bg-surface border border-outline-variant rounded flex items-center justify-center p-1 aspect-square relative" data-unit="Mill" onclick="addObservedUnit('Mill', 'wind_power')"><span class="material-symbols-outlined text-outline">wind_power</span></button>
+<button class="tactical-unit-icon bg-surface border border-outline-variant rounded flex items-center justify-center p-1 aspect-square relative" data-unit="Lumber Camp" onclick="addObservedUnit('Lumber Camp', 'forest')"><span class="material-symbols-outlined text-outline">forest</span></button>
+<button class="tactical-unit-icon bg-surface border border-outline-variant rounded flex items-center justify-center p-1 aspect-square relative" data-unit="Mining Camp" onclick="addObservedUnit('Mining Camp', 'terrain')"><span class="material-symbols-outlined text-outline">terrain</span></button>
+<button class="tactical-unit-icon bg-surface border border-outline-variant rounded flex items-center justify-center p-1 aspect-square relative" data-unit="Farm" onclick="addObservedUnit('Farm', 'agriculture')"><span class="material-symbols-outlined text-outline">agriculture</span></button>
+<button class="tactical-unit-icon bg-surface border border-outline-variant rounded flex items-center justify-center p-1 aspect-square relative" data-unit="Dock" onclick="addObservedUnit('Dock', 'anchor')"><span class="material-symbols-outlined text-outline">anchor</span></button>
+<button class="tactical-unit-icon bg-surface border border-outline-variant rounded flex items-center justify-center p-1 aspect-square relative" data-unit="Barracks" onclick="addObservedUnit('Barracks', 'shield')"><span class="material-symbols-outlined text-outline">shield</span></button>
+<button class="tactical-unit-icon bg-surface border border-outline-variant rounded flex items-center justify-center p-1 aspect-square relative" data-unit="Archery Range" onclick="addObservedUnit('Archery Range', 'sports_martial_arts')"><span class="material-symbols-outlined text-outline">sports_martial_arts</span></button>
+<button class="tactical-unit-icon bg-surface border border-outline-variant rounded flex items-center justify-center p-1 aspect-square relative" data-unit="Stable" onclick="addObservedUnit('Stable', 'pets')"><span class="material-symbols-outlined text-outline">pets</span></button>
+<button class="tactical-unit-icon bg-surface border border-outline-variant rounded flex items-center justify-center p-1 aspect-square relative" data-unit="Siege Workshop" onclick="addObservedUnit('Siege Workshop', 'carpenter')"><span class="material-symbols-outlined text-outline">carpenter</span></button>
+<button class="tactical-unit-icon bg-surface border border-outline-variant rounded flex items-center justify-center p-1 aspect-square relative" data-unit="Blacksmith" onclick="addObservedUnit('Blacksmith', 'construction')"><span class="material-symbols-outlined text-outline">construction</span></button>
+<button class="tactical-unit-icon bg-surface border border-outline-variant rounded flex items-center justify-center p-1 aspect-square relative" data-unit="Market" onclick="addObservedUnit('Market', 'storefront')"><span class="material-symbols-outlined text-outline">storefront</span></button>
+<button class="tactical-unit-icon bg-surface border border-outline-variant rounded flex items-center justify-center p-1 aspect-square relative" data-unit="Monastery" onclick="addObservedUnit('Monastery', 'church')"><span class="material-symbols-outlined text-outline">church</span></button>
+<button class="tactical-unit-icon bg-surface border border-outline-variant rounded flex items-center justify-center p-1 aspect-square relative" data-unit="University" onclick="addObservedUnit('University', 'school')"><span class="material-symbols-outlined text-outline">school</span></button>
+</div>
+</section>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-2 pt-2 bg-surface-container-highest dark:bg-surface-dim text-primary dark:text-primary-fixed-dim bg-parchment-deep border-t border-outline-variant shadow-2xl docked full-width bottom-0 rounded-t-xl md:hidden">
+<a class="flex flex-col items-center justify-center bg-gold-leaf text-on-primary rounded-xl p-2 font-label-tactical text-label-tactical scale-110 transition-transform duration-150 shadow-md" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">query_stats</span>
+<span class="text-xs mt-1">Live Stats</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline p-2 font-label-tactical text-label-tactical hover:text-blood-accent transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="text-xs mt-1">Forces</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline p-2 font-label-tactical text-label-tactical hover:text-blood-accent transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">psychology</span>
+<span class="text-xs mt-1">Advice</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline p-2 font-label-tactical text-label-tactical hover:text-blood-accent transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">notification_important</span>
+<span class="text-xs mt-1">Alerts</span>
+</a>
+</nav>
+<script>
+    const tooltip = document.getElementById('floating-tooltip');
+    let observedForces = {
+        'Archer': { count: 4, icon: 'sports_martial_arts', elId: 'Archer' },
+        'Town Center': { count: 1, icon: 'account_balance', elId: 'Town Center' }
+    };
+
+    function updateObservedForcesUI() {
+        const container = document.getElementById('observed-forces-container');
+        container.innerHTML = '';
+        
+        for (const [name, data] of Object.entries(observedForces)) {
+            if (data.count > 0) {
+                const el = document.createElement('div');
+                el.className = 'observed-item bg-surface border border-secondary text-secondary px-3 py-1 rounded-full text-xs font-label-tactical flex items-center gap-2 shadow-sm relative';
+                el.setAttribute('data-id', name);
+                el.onclick = () => decrementObservedUnit(el, name);
+                
+                el.innerHTML = `
+                    <span class="material-symbols-outlined text-[14px]">${data.icon}</span> 
+                    <span class="unit-name">${name}</span>
+                    <span class="badge bg-secondary text-on-secondary px-1.5 rounded-full text-[10px] font-bold">${data.count}</span>
+                `;
+                container.appendChild(el);
+            }
+        }
+    }
+
+    function addObservedUnit(name, icon) {
+        if (observedForces[name]) {
+            observedForces[name].count++;
+        } else {
+            observedForces[name] = { count: 1, icon: icon, elId: name };
+        }
+        updateObservedForcesUI();
+    }
+
+    function decrementObservedUnit(element, name) {
+        if (observedForces[name]) {
+            observedForces[name].count--;
+            if (observedForces[name].count <= 0) {
+                delete observedForces[name];
+            }
+            updateObservedForcesUI();
+        }
+    }
+
+    // Tooltip Logic
+    document.querySelectorAll('.tactical-unit-icon').forEach(icon => {
+        let pressTimer;
+        
+        icon.addEventListener('mouseenter', (e) => {
+            tooltip.textContent = icon.getAttribute('data-unit');
+            tooltip.classList.add('visible');
+        });
+        
+        icon.addEventListener('mousemove', (e) => {
+            tooltip.style.left = e.clientX + 'px';
+            tooltip.style.top = (e.clientY + 20) + 'px'; // Offset slightly below cursor
+        });
+        
+        icon.addEventListener('mouseleave', () => {
+            tooltip.classList.remove('visible');
+            clearTimeout(pressTimer);
+        });
+
+        // Touch interactions
+        icon.addEventListener('touchstart', (e) => {
+            pressTimer = setTimeout(() => {
+                tooltip.textContent = icon.getAttribute('data-unit');
+                tooltip.style.left = e.touches[0].clientX + 'px';
+                tooltip.style.top = (e.touches[0].clientY - 40) + 'px'; // Offset above finger
+                tooltip.classList.add('visible');
+            }, 500); // 500ms long press
+        });
+
+        icon.addEventListener('touchend', () => {
+            clearTimeout(pressTimer);
+            tooltip.classList.remove('visible');
+        });
+    });
+</script>
+
+
+</body></html>

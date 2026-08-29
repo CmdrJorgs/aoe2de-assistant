@@ -192,6 +192,19 @@ FEATURE_NAMES: List[str] = [
     "rel_cav_vs_opp_archer",
     "rel_archer_vs_opp_inf",
     "rel_inf_vs_opp_cav",
+    # 9. Civ Matchup Interaction Terms
+    "cav_matchup_delta",
+    "arch_matchup_delta",
+    "inf_matchup_delta",
+    "siege_matchup_delta",
+    "monk_matchup_delta",
+    "cav_vs_opp_arch_interaction",
+    "arch_vs_opp_inf_interaction",
+    "inf_vs_opp_cav_interaction",
+    # 10. Economic Kill Rate & Pacing Momentum
+    "eco_kill_rate_est",
+    "military_build_velocity",
+    "vill_pacing_efficiency",
 ]
 
 
@@ -394,10 +407,29 @@ class FeatureEncoder:
 
         # Relative advantages
         rel_mil_adv = (mil_tot - opp_mil_tot) / max(1.0, mil_tot + opp_mil_tot)
+        rel_mil_adv = (mil_tot - opp_mil_tot) / max(1.0, mil_tot + opp_mil_tot)
         rel_vill_adv = (vills_tot - (opp_age * 12.0 + t_min * 1.5)) / max(1.0, vills_tot)
         rel_cav_vs_arch = (mil_cav - opp_mil_arch) / max(1.0, mil_cav + opp_mil_arch)
         rel_arch_vs_inf = (mil_arch - opp_mil_inf) / max(1.0, mil_arch + opp_mil_inf)
         rel_inf_vs_cav = (mil_inf - opp_mil_cav) / max(1.0, mil_inf + opp_mil_cav)
+
+        # Civ matchup interaction deltas
+        cav_matchup_delta = p_aff["cavalry"] - opp_aff["cavalry"]
+        arch_matchup_delta = p_aff["archer"] - opp_aff["archer"]
+        inf_matchup_delta = p_aff["infantry"] - opp_aff["infantry"]
+        siege_matchup_delta = p_aff["siege"] - opp_aff["siege"]
+        monk_matchup_delta = p_aff["monk"] - opp_aff["monk"]
+
+        # Archetype cross-counter interactions
+        cav_vs_opp_arch_inter = p_aff["cavalry"] * opp_aff["archer"]
+        arch_vs_opp_inf_inter = p_aff["archer"] * opp_aff["infantry"]
+        inf_vs_opp_cav_inter = p_aff["infantry"] * opp_aff["cavalry"]
+
+        # Economic kill rate & momentum
+        eco_kill_rate = float(state.get("eco_kill_rate", state.get("opp_vills_killed_est", max(0.0, (mil_tot - opp_mil_tot) * 0.15))))
+        mil_velocity = mil_tot / max(1.0, t_min)
+        expected_vills = max(10.0, (t_sec / 25.0) + (p_age - 1) * 5.0)
+        vill_pacing = vills_tot / max(1.0, expected_vills)
 
         features = [
             t_min,
@@ -465,6 +497,17 @@ class FeatureEncoder:
             rel_cav_vs_arch,
             rel_arch_vs_inf,
             rel_inf_vs_cav,
+            cav_matchup_delta,
+            arch_matchup_delta,
+            inf_matchup_delta,
+            siege_matchup_delta,
+            monk_matchup_delta,
+            cav_vs_opp_arch_inter,
+            arch_vs_opp_inf_inter,
+            inf_vs_opp_cav_inter,
+            eco_kill_rate,
+            mil_velocity,
+            vill_pacing,
         ]
 
         return np.array(features, dtype=np.float32)

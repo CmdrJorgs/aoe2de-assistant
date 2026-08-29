@@ -25,10 +25,12 @@ from aoe2_coach.schemas.match import (
 
 def test_feature_encoder_dimensions_and_names():
     encoder = FeatureEncoder()
-    assert len(encoder.feature_names) == 65
-    assert encoder.num_features == 65
+    assert len(encoder.feature_names) == 76
+    assert encoder.num_features == 76
     assert "timestamp_min" in encoder.feature_names
     assert "rel_military_advantage" in encoder.feature_names
+    assert "cav_matchup_delta" in encoder.feature_names
+    assert "eco_kill_rate_est" in encoder.feature_names
 
 
 def test_encode_dict_basic():
@@ -54,7 +56,7 @@ def test_encode_dict_basic():
     }
     vec = encoder.encode_dict(state)
     assert isinstance(vec, np.ndarray)
-    assert vec.shape == (65,)
+    assert vec.shape == (encoder.num_features,)
     assert vec.dtype == np.float32
     assert not np.isnan(vec).any()
 
@@ -88,7 +90,7 @@ def test_encode_snapshot():
     )
 
     vec = encoder.encode_snapshot(snapshot)
-    assert vec.shape == (65,)
+    assert vec.shape == (encoder.num_features,)
     assert not np.isnan(vec).any()
     # Check player cavalry affinity for Franks
     assert vec[50] == 1.0  # player_cav_affinity for Franks
@@ -101,5 +103,5 @@ def test_encode_batch_and_dataframe():
         {"player_civ": "Mongols", "opponent_civ": "Goths", "player_age": 3, "vills_total": 45, "food": 500, "wood": 400, "gold": 250, "stone": 0},
     ])
     X = encoder.encode_dataframe(df)
-    assert X.shape == (2, 65)
+    assert X.shape == (2, encoder.num_features)
     assert X.dtype == np.float32

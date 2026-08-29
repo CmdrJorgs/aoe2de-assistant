@@ -1,0 +1,38 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aoe2-coach-ingress
+  namespace: aoe2-coach
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  tls:
+    - hosts:
+        - coach.aoe2.ai
+        - app.aoe2coach.ai
+      secretName: aoe2-coach-tls
+  rules:
+    - host: coach.aoe2.ai
+      http:
+        paths:
+          # Route API traffic directly to FastAPI backend
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: aoe2-coach-backend-svc
+                port:
+                  number: 8000
+          # Route UI traffic to Next.js frontend
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: aoe2-coach-frontend-svc
+                port:
+                  number: 3000

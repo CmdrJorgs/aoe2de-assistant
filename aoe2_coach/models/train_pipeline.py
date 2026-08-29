@@ -116,12 +116,25 @@ def generate_augmented_training_dataset(
         gold_stock = int(np.random.exponential(scale=200))
         stone_stock = int(np.random.exponential(scale=100))
 
-        # Win probability conditions
+        # Win probability conditions with civ matchup synergy and eco kills
+        opp_aff = CIV_ARCHETYPES.get(opp_civ.lower(), {"cavalry": 0.5, "archer": 0.5, "infantry": 0.5, "siege": 0.5, "monk": 0.5})
+        civ_synergy = (
+            (p_aff["cavalry"] * opp_aff["archer"])
+            + (p_aff["archer"] * opp_aff["infantry"])
+            + (p_aff["infantry"] * opp_aff["cavalry"])
+            - (opp_aff["cavalry"] * p_aff["archer"])
+            - (opp_aff["archer"] * p_aff["infantry"])
+            - (opp_aff["infantry"] * p_aff["cavalry"])
+        )
         mil_count = int(np.random.poisson(lam=max(2, tot_vills * 0.4)))
         opp_mil_total = opp_sighted_cav + opp_sighted_arch + opp_sighted_inf
-        eco_lead = (tot_vills - (t_sec / 28.0)) > 2
-        mil_lead = mil_count >= opp_mil_total
-        is_winner = bool(eco_lead and mil_lead and np.random.rand() > 0.25)
+        eco_lead = float(tot_vills - (t_sec / 28.0))
+        mil_lead = float(mil_count - opp_mil_total)
+        eco_kills = int(max(0, np.random.poisson(lam=max(0.2, mil_lead * 0.35 + 1.2 if mil_lead > 0 else 0.4))))
+        eco_kill_rate = eco_kills / max(1.0, t_sec / 60.0)
+
+        win_score = (eco_lead * 0.35) + (mil_lead * 0.40) + (civ_synergy * 1.5) + (eco_kill_rate * 2.0) + ((elo - 1400.0) / 400.0) + np.random.normal(0, 0.75)
+        is_winner = bool(win_score > 0.0)
 
         # Tactical Stance Label
         if mil_count > opp_mil_total + 6 and p_age >= 3:
@@ -169,6 +182,8 @@ def generate_augmented_training_dataset(
             "opp_sighted_cavalry": opp_sighted_cav,
             "opp_sighted_archers": opp_sighted_arch,
             "opp_sighted_infantry": opp_sighted_inf,
+            "eco_kill_rate": eco_kill_rate,
+            "opp_vills_killed_est": eco_kills,
         }
         records.append(row)
 

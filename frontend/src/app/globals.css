@@ -1,75 +1,187 @@
 @import "tailwindcss";
 
-:root {
-  --background: #0b0f17;
-  --foreground: #f1f5f9;
-  --card-bg: #111827;
-  --card-border: #1e293b;
-  --aoe-gold: #f59e0b;
-  --aoe-gold-light: #fde047;
-  --aoe-gold-dark: #b45309;
-  
-  --res-food: #ef4444;
-  --res-wood: #f59e0b;
-  --res-gold: #facc15;
-  --res-stone: #94a3b8;
+@theme {
+  --color-outline-variant: #d2c5b2;
+  --color-outline: #807666;
+  --color-map-forest: #526D39;
+  --color-tertiary-fixed-dim: #b1d092;
+  --color-inverse-on-surface: #faf0d7;
+  --color-on-tertiary-fixed-variant: #344e1d;
+  --color-surface-variant: #ece2c9;
+  --color-primary-container: #cda351;
+  --color-on-primary-container: #523a00;
+  --color-surface-container-high: #f1e8cf;
+  --color-on-surface-variant: #4e4638;
+  --color-secondary: #aa3527;
+  --color-tertiary: #4b6633;
+  --color-secondary-fixed: #ffdad4;
+  --color-surface-container: #f7edd4;
+  --color-background: #fff8ef;
+  --color-parchment-deep: #E7D8B1;
+  --color-surface-container-lowest: #ffffff;
+  --color-primary-fixed-dim: #edc06b;
+  --color-on-tertiary-container: #2c4516;
+  --color-on-background: #201b0c;
+  --color-on-error: #ffffff;
+  --color-secondary-fixed-dim: #ffb4a8;
+  --color-on-error-container: #93000a;
+  --color-error-container: #ffdad6;
+  --color-surface-tint: #7a5909;
+  --color-on-tertiary-fixed: #0d2000;
+  --color-primary: #7a5909;
+  --color-primary-fixed: #ffdea5;
+  --color-on-primary: #ffffff;
+  --color-on-secondary-fixed-variant: #891d12;
+  --color-surface-bright: #fff8ef;
+  --color-on-primary-fixed-variant: #5d4200;
+  --color-on-secondary-fixed: #410000;
+  --color-on-primary-fixed: #271900;
+  --color-on-secondary: #ffffff;
+  --color-on-secondary-container: #6f0703;
+  --color-gold-leaf: #B8862D;
+  --color-tertiary-container: #95b378;
+  --color-on-surface: #201b0c;
+  --color-inverse-primary: #edc06b;
+  --color-surface: #fff8ef;
+  --color-charcoal-ink: #181C29;
+  --color-secondary-container: #fe725f;
+  --color-inverse-surface: #35301f;
+  --color-surface-dim: #e3d9c1;
+  --color-blood-accent: #8B0000;
+  --color-error: #ba1a1a;
+  --color-surface-container-highest: #ece2c9;
+  --color-tertiary-fixed: #cdedac;
+  --color-surface-container-low: #fdf3da;
+  --color-on-tertiary: #ffffff;
+
+  --font-headline-md: var(--font-source-serif), serif;
+  --font-display-lg: var(--font-source-serif), serif;
+  --font-headline-lg: var(--font-source-serif), serif;
+  --font-headline-lg-mobile: var(--font-source-serif), serif;
+  --font-label-tactical: var(--font-jetbrains-mono), monospace;
+  --font-body-lg: var(--font-noto-sans), sans-serif;
+  --font-body-md: var(--font-noto-sans), sans-serif;
+
+  --spacing-container-max: 1280px;
+  --spacing-gutter: 24px;
+  --spacing-margin-mobile: 16px;
+  --spacing-margin-desktop: 64px;
 }
 
 body {
-  background-color: var(--background);
-  color: var(--foreground);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  background-color: var(--color-background);
+  color: var(--color-on-background);
+  font-family: var(--font-noto-sans), sans-serif;
   min-height: 100vh;
-  color-scheme: dark;
 }
 
-/* Custom RTS Glows and Accents */
-.gold-glow {
-  box-shadow: 0 0 20px rgba(245, 158, 11, 0.25);
+/* Parchment Inset & Panel Effects */
+.parchment-panel {
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.05), 0 4px 6px rgba(0, 0, 0, 0.08);
+  position: relative;
 }
 
-.gold-glow-lg {
-  box-shadow: 0 0 35px rgba(245, 158, 11, 0.4);
+.parchment-panel::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border: 1px solid var(--color-outline-variant, #d2c5b2);
+  pointer-events: none;
+  border-radius: inherit;
 }
 
-.crimson-glow {
-  box-shadow: 0 0 20px rgba(239, 68, 68, 0.25);
+/* Sunken Input Field */
+.input-sunken {
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--color-outline-variant, #d2c5b2);
 }
 
-.emerald-glow {
-  box-shadow: 0 0 20px rgba(16, 185, 129, 0.25);
+.input-sunken:focus-within {
+  box-shadow: 0 0 0 2px var(--color-gold-leaf, #B8862D);
+  border-color: transparent;
 }
 
-/* Custom Scrollbar for RTS look */
+/* Decorative Horizontal Divider */
+.hr-decorative {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: var(--color-outline, #807666);
+}
+
+.hr-decorative::before,
+.hr-decorative::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid var(--color-outline-variant, #d2c5b2);
+}
+
+.hr-decorative:not(:empty)::before {
+  margin-right: 0.5em;
+}
+
+.hr-decorative:not(:empty)::after {
+  margin-left: 0.5em;
+}
+
+/* Interactive Hover States */
+.hover-expand {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-expand:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12);
+}
+
+/* Tactical Unit Icon in Fog of War Grid */
+.tactical-unit-icon {
+  transition: all 0.12s ease;
+}
+
+.tactical-unit-icon:hover {
+  transform: scale(1.06);
+  border-color: var(--color-gold-leaf, #B8862D);
+  box-shadow: 0 0 8px rgba(184, 134, 45, 0.45);
+  z-index: 10;
+}
+
+.tactical-unit-icon:active {
+  transform: scale(0.95);
+}
+
+/* Observed Item Pill Tag */
+.observed-item {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.observed-item:hover {
+  background-color: var(--color-error-container, #ffdad6);
+  border-color: var(--color-error, #ba1a1a);
+  color: var(--color-error, #ba1a1a);
+}
+
+.observed-item:hover .badge {
+  background-color: var(--color-error, #ba1a1a);
+  color: #ffffff;
+}
+
+/* Custom Scrollbar for War Room Parchment Theme */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0b0f17;
+  background: var(--color-surface-dim, #e3d9c1);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
+  background: var(--color-outline-variant, #d2c5b2);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #f59e0b;
-}
-
-@keyframes pulse-subtle {
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.85;
-    transform: scale(1.02);
-  }
-}
-
-.animate-pulse-subtle {
-  animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  background: var(--color-gold-leaf, #B8862D);
 }
