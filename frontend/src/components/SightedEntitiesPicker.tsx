@@ -1,67 +1,57 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useCoachStore } from "@/lib/store";
 import {
   getAssetDatabase,
   getAssetFromCatalog,
+  getCivEntities,
   AssetDatabase,
+  CivGridEntity,
 } from "@/lib/assetDb";
 import { Trash2 } from "lucide-react";
 
-interface GridEntity {
-  name: string;
-  category: "military" | "economy" | "building";
-  type: "unit" | "building";
-}
-
-const TACTICAL_ENTITIES: GridEntity[] = [
-  // Military Units
-  { name: "Militia", category: "military", type: "unit" },
-  { name: "Spearman", category: "military", type: "unit" },
-  { name: "Eagle Scout", category: "military", type: "unit" },
-  { name: "Archer", category: "military", type: "unit" },
-  { name: "Skirmisher", category: "military", type: "unit" },
-  { name: "Cavalry Archer", category: "military", type: "unit" },
-  { name: "Scout Cavalry", category: "military", type: "unit" },
-  { name: "Knight", category: "military", type: "unit" },
-  { name: "Camel", category: "military", type: "unit" },
-  { name: "Battering Ram", category: "military", type: "unit" },
-  { name: "Mangonel", category: "military", type: "unit" },
-  { name: "Scorpion", category: "military", type: "unit" },
-  { name: "Trebuchet", category: "military", type: "unit" },
-  { name: "Petard", category: "military", type: "unit" },
-  { name: "Monk", category: "military", type: "unit" },
-
-  // Ships
-  { name: "Galley", category: "military", type: "unit" },
-  { name: "Demolition Ship", category: "military", type: "unit" },
-  { name: "Fire Ship", category: "military", type: "unit" },
-
-  // Economy Units
-  { name: "Villager", category: "economy", type: "unit" },
-  { name: "Trade Cart", category: "economy", type: "unit" },
-  { name: "Fishing Ship", category: "economy", type: "unit" },
-  { name: "Transport Ship", category: "economy", type: "unit" },
-
-  // Buildings
-  { name: "Castle", category: "building", type: "building" },
-  { name: "Town Center", category: "building", type: "building" },
-  { name: "Barracks", category: "building", type: "building" },
-  { name: "Archery Range", category: "building", type: "building" },
-  { name: "Stable", category: "building", type: "building" },
-  { name: "Siege Workshop", category: "building", type: "building" },
-  { name: "Blacksmith", category: "building", type: "building" },
-  { name: "Market", category: "building", type: "building" },
-  { name: "Monastery", category: "building", type: "building" },
-  { name: "University", category: "building", type: "building" },
-  { name: "Watch Tower", category: "building", type: "building" },
-  { name: "Dock", category: "building", type: "building" },
-  { name: "House", category: "building", type: "building" },
-  { name: "Mill", category: "building", type: "building" },
-  { name: "Lumber Camp", category: "building", type: "building" },
-  { name: "Mining Camp", category: "building", type: "building" },
-  { name: "Farm", category: "building", type: "building" },
+// Fallback tactical entities before database loads
+const FALLBACK_ENTITIES: CivGridEntity[] = [
+  { name: "Militia", category: "military", type: "unit", image: "/aoe2_assets/units/008_militia.png" },
+  { name: "Spearman", category: "military", type: "unit", image: "/aoe2_assets/units/031_spearman.png" },
+  { name: "Eagle Scout", category: "military", type: "unit", image: "/aoe2_assets/units/040_eagle_scout.png" },
+  { name: "Archer", category: "military", type: "unit", image: "/aoe2_assets/units/017_archer.png" },
+  { name: "Skirmisher", category: "military", type: "unit", image: "/aoe2_assets/units/020_skirmisher.png" },
+  { name: "Cavalry Archer", category: "military", type: "unit", image: "/aoe2_assets/units/019_cavalry_archer.png" },
+  { name: "Scout Cavalry", category: "military", type: "unit", image: "/aoe2_assets/units/000_scout_cavalry.png" },
+  { name: "Knight", category: "military", type: "unit", image: "/aoe2_assets/units/001_knight.png" },
+  { name: "Camel", category: "military", type: "unit", image: "/aoe2_assets/units/002_camel.png" },
+  { name: "Battering Ram", category: "military", type: "unit", image: "/aoe2_assets/units/024_battering_ram.png" },
+  { name: "Mangonel", category: "military", type: "unit", image: "/aoe2_assets/units/025_mangonel.png" },
+  { name: "Scorpion", category: "military", type: "unit", image: "/aoe2_assets/units/026_scorpion.png" },
+  { name: "Trebuchet", category: "military", type: "unit", image: "/aoe2_assets/units/028_trebuchet.png" },
+  { name: "Petard", category: "military", type: "unit", image: "/aoe2_assets/units/027_petard.png" },
+  { name: "Monk", category: "military", type: "unit", image: "/aoe2_assets/units/030_monk.png" },
+  { name: "Galley", category: "military", type: "unit", image: "/aoe2_assets/units/033_galley.png" },
+  { name: "Demolition Ship", category: "military", type: "unit", image: "/aoe2_assets/units/035_demolition_ship.png" },
+  { name: "Fire Ship", category: "military", type: "unit", image: "/aoe2_assets/units/036_fire_ship.png" },
+  { name: "Villager", category: "economy", type: "unit", image: "/aoe2_assets/units/083_villager.png" },
+  { name: "Trade Cart", category: "economy", type: "unit", image: "/aoe2_assets/units/128_trade_cart.png" },
+  { name: "Fishing Ship", category: "economy", type: "unit", image: "/aoe2_assets/units/013_fishing_ship.png" },
+  { name: "Transport Ship", category: "economy", type: "unit", image: "/aoe2_assets/units/545_transport_ship.png" },
+  { name: "Castle", category: "building", type: "building", image: "/aoe2_assets/buildings/015_castle.png" },
+  { name: "Town Center", category: "building", type: "building", image: "/aoe2_assets/buildings/014_town_center.png" },
+  { name: "Barracks", category: "building", type: "building", image: "/aoe2_assets/buildings/002_barracks_1.png" },
+  { name: "Archery Range", category: "building", type: "building", image: "/aoe2_assets/buildings/000_archery_range_1.png" },
+  { name: "Stable", category: "building", type: "building", image: "/aoe2_assets/buildings/023_stable_1.png" },
+  { name: "Siege Workshop", category: "building", type: "building", image: "/aoe2_assets/buildings/022_siege_workshop_2.png" },
+  { name: "Blacksmith", category: "building", type: "building", image: "/aoe2_assets/buildings/004_blacksmith_1.png" },
+  { name: "Market", category: "building", type: "building", image: "/aoe2_assets/buildings/018_market.png" },
+  { name: "Monastery", category: "building", type: "building", image: "/aoe2_assets/buildings/019_monastery.png" },
+  { name: "University", category: "building", type: "building", image: "/aoe2_assets/buildings/033_university.png" },
+  { name: "Watch Tower", category: "building", type: "building", image: "/aoe2_assets/buildings/025_tower.png" },
+  { name: "Dock", category: "building", type: "building", image: "/aoe2_assets/buildings/013_dock_1.png" },
+  { name: "House", category: "building", type: "building", image: "/aoe2_assets/buildings/017_house_1.png" },
+  { name: "Mill", category: "building", type: "building", image: "/aoe2_assets/buildings/020_mill_1.png" },
+  { name: "Lumber Camp", category: "building", type: "building", image: "/aoe2_assets/buildings/016_lumber_camp_1.png" },
+  { name: "Mining Camp", category: "building", type: "building", image: "/aoe2_assets/buildings/021_mining_camp_1.png" },
+  { name: "Farm", category: "building", type: "building", image: "/aoe2_assets/buildings/006_farm_1.png" },
 ];
 
 export const SightedEntitiesPicker: React.FC = () => {
@@ -90,28 +80,38 @@ export const SightedEntitiesPicker: React.FC = () => {
     getAssetDatabase().then(setDb);
   }, []);
 
-  // Check if opponent has unique units to dynamically inject into the grid
-  const opponentCivMeta = civs.find(
-    (c) => c.name.toLowerCase() === snapshot.opponent_civ.toLowerCase()
-  );
+  // Fetch possible enemy units and buildings dynamically for the selected opponent civ
+  const opponentCivEntities = useMemo(() => {
+    const fetched = getCivEntities(db, snapshot.opponent_civ);
+    const baseList = fetched.length > 0 ? fetched : FALLBACK_ENTITIES;
 
-  const dynamicEntities = [...TACTICAL_ENTITIES];
-  if (opponentCivMeta && opponentCivMeta.unique_units) {
-    opponentCivMeta.unique_units.forEach((uu) => {
-      if (!dynamicEntities.some((e) => e.name.toLowerCase() === uu.toLowerCase())) {
-        dynamicEntities.unshift({
-          name: uu,
-          category: "military",
-          type: "unit",
-        });
-      }
-    });
-  }
+    // Check if opponent metadata has unique units to guarantee inclusion
+    const opponentCivMeta = civs.find(
+      (c) => c.name.toLowerCase() === snapshot.opponent_civ.toLowerCase()
+    );
 
-  const filteredEntities = dynamicEntities.filter((e) => {
-    if (activeFilter === "all") return true;
-    return e.category === activeFilter;
-  });
+    const result = [...baseList];
+    if (opponentCivMeta && opponentCivMeta.unique_units) {
+      opponentCivMeta.unique_units.forEach((uu) => {
+        if (!result.some((e) => e.name.toLowerCase() === uu.toLowerCase())) {
+          const asset = getAssetFromCatalog(db, uu, "unit", snapshot.opponent_civ);
+          result.unshift({
+            name: uu,
+            category: "military",
+            type: "unit",
+            image: asset?.image || "",
+          });
+        }
+      });
+    }
+
+    return result;
+  }, [db, snapshot.opponent_civ, civs]);
+
+  const filteredEntities = useMemo(() => {
+    if (activeFilter === "all") return opponentCivEntities;
+    return opponentCivEntities.filter((e) => e.category === activeFilter);
+  }, [opponentCivEntities, activeFilter]);
 
   const sightedUnitsList = Object.entries(snapshot.sighted_enemy_units);
   const sightedBldgsList = Object.entries(snapshot.sighted_enemy_buildings);
@@ -119,7 +119,7 @@ export const SightedEntitiesPicker: React.FC = () => {
     sightedUnitsList.reduce((acc, [, c]) => acc + c, 0) +
     sightedBldgsList.reduce((acc, [, c]) => acc + c, 0);
 
-  const handleEntityClick = (entity: GridEntity) => {
+  const handleEntityClick = (entity: CivGridEntity) => {
     if (entity.type === "building") {
       addSightedBuilding(entity.name, 1);
     } else {
@@ -281,12 +281,14 @@ export const SightedEntitiesPicker: React.FC = () => {
       {/* Grid of Tactical Unit & Building Icons */}
       <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-1.5 bg-surface-variant p-2.5 rounded border border-outline-variant">
         {filteredEntities.map((entity) => {
-          const asset = getAssetFromCatalog(
-            db,
-            entity.name,
-            entity.type,
-            snapshot.opponent_civ
-          );
+          const imgUrl =
+            entity.image ||
+            getAssetFromCatalog(
+              db,
+              entity.name,
+              entity.type,
+              snapshot.opponent_civ
+            )?.image;
 
           const count =
             entity.type === "building"
@@ -297,23 +299,26 @@ export const SightedEntitiesPicker: React.FC = () => {
 
           return (
             <button
-              key={entity.name}
+              key={`${entity.type}-${entity.name}`}
               type="button"
               onClick={() => handleEntityClick(entity)}
               onMouseEnter={(e) => handleMouseMove(e, entity.name)}
               onMouseMove={(e) => handleMouseMove(e, entity.name)}
               onMouseLeave={() => setHoveredEntity(null)}
-              className={`tactical-unit-icon bg-surface border rounded flex items-center justify-center p-1 aspect-square relative cursor-pointer shadow-2xs ${
+              title={entity.name}
+              aria-label={`${entity.name}${count > 0 ? ` (${count} sighted)` : ""}`}
+              className={`tactical-unit-icon bg-surface border rounded flex items-center justify-center p-0 aspect-square relative cursor-pointer shadow-2xs overflow-hidden ${
                 isSelected
-                  ? "border-gold-leaf ring-1 ring-gold-leaf bg-surface-container-high"
+                  ? "border-gold-leaf ring-2 ring-gold-leaf bg-surface-container-high"
                   : "border-outline-variant hover:border-gold-leaf"
               }`}
             >
-              {asset?.image ? (
+              {imgUrl ? (
                 <img
-                  src={asset.image}
+                  src={imgUrl}
                   alt={entity.name}
-                  className="w-full h-full object-contain pointer-events-none"
+                  className="w-full h-full object-cover block pointer-events-none"
+                  loading="lazy"
                   onError={(e) => {
                     (e.currentTarget as HTMLImageElement).style.display = "none";
                   }}
@@ -325,7 +330,7 @@ export const SightedEntitiesPicker: React.FC = () => {
               )}
 
               {isSelected && (
-                <span className="absolute -top-1.5 -right-1.5 bg-secondary text-on-secondary rounded-full text-[9px] font-bold px-1 font-label-tactical shadow-sm">
+                <span className="absolute top-0.5 right-0.5 bg-secondary text-on-secondary rounded-full text-[9px] font-bold px-1 font-label-tactical shadow-sm pointer-events-none z-10 leading-tight">
                   {count}
                 </span>
               )}

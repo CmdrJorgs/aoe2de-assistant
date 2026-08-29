@@ -137,6 +137,8 @@ body {
 /* Tactical Unit Icon in Fog of War Grid */
 .tactical-unit-icon {
   transition: all 0.12s ease;
+  padding: 0;
+  overflow: hidden;
 }
 
 .tactical-unit-icon:hover {

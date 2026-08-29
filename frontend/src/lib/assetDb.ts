@@ -24,6 +24,16 @@ export interface CivAssetCatalog {
 
 export type AssetDatabase = Record<string, CivAssetCatalog>;
 
+export interface CivGridEntity {
+  name: string;
+  category: "military" | "economy" | "building";
+  type: "unit" | "building";
+  image: string;
+  age_id?: number;
+  picture_index?: number;
+  available?: boolean;
+}
+
 // In-memory cache for dynamic fetching
 let cachedDb: AssetDatabase | null = null;
 
@@ -43,23 +53,65 @@ export function normalizeAssetKey(text: string): string {
 }
 
 /**
- * Known Civ Emblem mappings
+ * Known Civ Aliases for database lookups
  */
-const KNOWN_CIV_EMBLEMS: Record<string, string> = {
-  berbers: "berber.png",
-  magyar: "magyars.png",
+const KNOWN_CIV_ALIASES: Record<string, string> = {
+  magyars: "magyar",
+  hindustanis: "indians",
 };
 
 /**
- * Resolves civilization emblem PNG path.
+ * Normalizes civilization name to catalog key.
+ */
+export function normalizeCivKey(civName?: string): string {
+  if (!civName) return "_all";
+  const clean = normalizeAssetKey(civName);
+  return KNOWN_CIV_ALIASES[clean] || clean;
+}
+
+/**
+ * Economy unit name set for classification
+ */
+const ECO_UNIT_NAMES = new Set([
+  "villager",
+  "female villager",
+  "trade cart",
+  "fishing ship",
+  "transport ship",
+  "trade cog",
+  "mule cart",
+  "ox cart",
+]);
+
+/**
+ * Determines whether a unit belongs to the economy category.
+ */
+export function isEconomyUnit(name: string): boolean {
+  return ECO_UNIT_NAMES.has(name.toLowerCase().trim());
+}
+
+/**
+ * Known Civ Emblem mappings for civ_techtree_buttons
+ */
+const KNOWN_CIV_EMBLEMS: Record<string, string> = {
+  berbers: "berber",
+  berber: "berber",
+  magyar: "magyars",
+  magyars: "magyars",
+  hindustanis: "indians",
+  indians: "indians",
+  incas: "inca",
+  inca: "inca",
+};
+
+/**
+ * Resolves civilization emblem PNG path from civ_techtree_buttons.
  */
 export function getCivEmblemUrl(civName: string): string {
-  if (!civName) return "/aoe2_assets/emblems/franks.png";
+  if (!civName) return "/aoe2_assets/icons/civ_techtree_buttons/menu_techtree_franks.png";
   const clean = civName.toLowerCase().trim().replace(/[^a-z0-9]/g, "");
-  if (KNOWN_CIV_EMBLEMS[clean]) {
-    return `/aoe2_assets/emblems/${KNOWN_CIV_EMBLEMS[clean]}`;
-  }
-  return `/aoe2_assets/emblems/${clean}.png`;
+  const civKey = KNOWN_CIV_EMBLEMS[clean] || clean;
+  return `/aoe2_assets/icons/civ_techtree_buttons/menu_techtree_${civKey}.png`;
 }
 
 /**
@@ -131,7 +183,7 @@ export function getAssetFromCatalog(
 ): AssetItem | null {
   if (!db || Object.keys(db).length === 0) return null;
   const key = normalizeAssetKey(nameOrKey);
-  const civKey = civ ? normalizeAssetKey(civ) : "_all";
+  const civKey = civ ? normalizeCivKey(civ) : "_all";
 
   // 1. Try specified civilization
   if (civKey && db[civKey]?.[category]?.[key]) {
@@ -219,4 +271,44 @@ export function isCivAssetAvailable(
   const asset = getAssetFromCatalog(db, nameOrKey, category, civ);
   return asset?.available ?? false;
 }
+
+/**
+ * Extracts all available units and buildings for a specific civilization from the asset database.
+ */
+export function getCivEntities(
+  db: AssetDatabase,
+  civName: string
+): CivGridEntity[] {
+  if (!db || Object.keys(db).length === 0) return [];
+  const civKey = normalizeCivKey(civName);
+  const civCatalog = db[civKey] || db["_all"];
+  if (!civCatalog) return [];
+
+  const units: CivGridEntity[] = Object.values(civCatalog.unit || {})
+    .filter((u) => u.available !== false)
+    .map((u) => ({
+      name: u.name,
+      category: isEconomyUnit(u.name) ? "economy" : "military",
+      type: "unit",
+      image: u.image,
+      age_id: u.age_id,
+      picture_index: u.picture_index,
+      available: u.available,
+    }));
+
+  const buildings: CivGridEntity[] = Object.values(civCatalog.building || {})
+    .filter((b) => b.available !== false)
+    .map((b) => ({
+      name: b.name,
+      category: "building",
+      type: "building",
+      image: b.image,
+      age_id: b.age_id,
+      picture_index: b.picture_index,
+      available: b.available,
+    }));
+
+  return [...units, ...buildings];
+}
+
 

@@ -19,6 +19,7 @@ const DEFAULT_SNAPSHOT: SnapshotInput = {
   player_elo: 1000,
   game_time_minutes: 20.0,
   current_age: 3,
+  opponent_estimated_age: 3,
   food: 320,
   wood: 750,
   gold: 120,
