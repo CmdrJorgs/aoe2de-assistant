@@ -108,13 +108,18 @@ class PromptBuilder:
         cls,
         recommendation: MLRecommendation,
         user_notes: Optional[str] = None,
+        ruleset: Optional[Any] = None,
     ) -> str:
         """
         Assemble the structured user prompt containing match telemetry,
         ML model predictions, and deterministic counter-matrix evaluations.
         """
+        from aoe2_coach.rules.game_ruleset import RulesRegistry
         ctx = recommendation.match_context
-        civ_info = get_civ_info(ctx.player_civ)
+        active_patch = getattr(recommendation, "patch_version", getattr(ctx, "patch_version", "101.103.x"))
+        active_ruleset = ruleset or RulesRegistry.get(active_patch)
+
+        civ_info = get_civ_info(ctx.player_civ, ruleset=active_ruleset)
         civ_bonuses_str = ", ".join(civ_info.civ_bonuses[:2]) if civ_info else "Standard bonuses"
         unique_units_str = ", ".join(civ_info.unique_units) if civ_info else "None"
 
@@ -141,6 +146,7 @@ class PromptBuilder:
 
         prompt_payload = {
             "match_context": {
+                "patch_version": active_patch,
                 "player_civ": ctx.player_civ,
                 "opponent_civ": ctx.opponent_civ,
                 "player_elo": ctx.player_elo,

@@ -104,6 +104,7 @@ class ONNXExporter:
         economic_rebalancer: EconomicRebalancer,
         stance_predictor: StanceTimingPredictor,
         artifacts_dir: str = "aoe2_coach/models/artifacts",
+        patch_version: str = "101.103.x",
     ) -> Dict[str, str]:
         """Export all models to ONNX and generate metadata JSON."""
         os.makedirs(artifacts_dir, exist_ok=True)
@@ -122,6 +123,7 @@ class ONNXExporter:
         self.export_stance_predictor(stance_predictor, paths["stance_predictor"])
 
         metadata = {
+            "patch_version": patch_version,
             "num_features": self.num_features,
             "feature_names": FEATURE_NAMES,
             "composition_classes": COMPOSITION_CLASSES,

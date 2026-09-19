@@ -41,6 +41,7 @@ class SnapshotInput(BaseModel):
     opponent_estimated_age: Optional[int] = Field(default=None, ge=1, le=4, description="Estimated opponent age (defaults to player age)")
     
     # Optional flags & context
+    patch_version: str = Field(default="latest", description="Game patch version, e.g. '101.103.x', '101.102.x', or 'latest'")
     user_notes: Optional[str] = Field(default=None, description="Freeform notes or tactical focus")
     force_fallback: bool = Field(default=False, description="Force deterministic fallback explainer without calling LLM")
     elo_tier_override: Optional[str] = Field(default=None, description="Override ELO tier ('beginner', 'intermediate', 'advanced')")
@@ -50,6 +51,7 @@ class RecommendationResponse(BaseModel):
     """
     Unified coaching recommendation response combining ML, Domain Rules, and Verified Explanation.
     """
+    patch_version: str = "101.103.x"
     match_context: Dict[str, Any]
     primary_directive: str
     win_probability: Dict[str, Any]
@@ -69,6 +71,7 @@ class CounterMatrixRequest(BaseModel):
     current_age: int = 3
     enemy_army: Dict[str, int] = Field(default_factory=lambda: {"Berserk": 5})
     budget_weight: str = Field(default="balanced", description="'cost_efficiency', 'raw_power', or 'balanced'")
+    patch_version: str = "latest"
 
 
 class CounterMatrixResponse(BaseModel):
@@ -77,6 +80,7 @@ class CounterMatrixResponse(BaseModel):
     threat_analysis: List[Dict[str, Any]]
     recommended_counters: List[Dict[str, Any]]
     counter_compositions: List[Dict[str, Any]]
+    patch_version: str = "101.103.x"
 
 
 class ProductionGoal(BaseModel):
@@ -98,6 +102,7 @@ class EconomySolverRequest(BaseModel):
     )
     current_stockpile: Optional[Dict[str, int]] = None
     current_vills: Optional[Dict[str, int]] = None
+    patch_version: str = "latest"
 
 
 class EconomySolverResponse(BaseModel):
@@ -111,6 +116,7 @@ class EconomySolverResponse(BaseModel):
     net_rates: Dict[str, float]
     delta_shifts: Dict[str, int]
     action_advice: List[str]
+    patch_version: str = "101.103.x"
 
 
 class VoiceParseRequest(BaseModel):
@@ -145,6 +151,7 @@ class CombatSimRequest(BaseModel):
     defender_upgrades: List[str] = Field(default_factory=list)
     
     elevation_diff: int = Field(default=0, ge=-1, le=1, description="1=Attacker on hill, -1=Defender on hill, 0=Flat")
+    patch_version: str = "latest"
 
 
 class CombatSimResponse(BaseModel):
@@ -160,6 +167,7 @@ class CombatSimResponse(BaseModel):
     remaining_defenders: int
     cost_efficiency_ratio: float
     tactical_summary: str
+    patch_version: str = "101.103.x"
 
 
 class HealthResponse(BaseModel):
@@ -169,3 +177,5 @@ class HealthResponse(BaseModel):
     llm_connected: bool
     civs_count: int
     units_count: int
+    active_patch: str = "101.103.x"
+    supported_patches: List[str] = Field(default_factory=list)

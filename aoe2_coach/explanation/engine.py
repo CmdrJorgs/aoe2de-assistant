@@ -48,6 +48,8 @@ class TacticalExplanationEngine:
         user_notes: Optional[str] = None,
         force_fallback: Optional[bool] = None,
         config_override: Optional[LLMConfig] = None,
+        ruleset: Optional[Any] = None,
+        patch_version: Optional[str] = None,
     ) -> VerifiedCoachingResponse:
         """
         Generate structured, verified coaching response synchronously.
@@ -67,7 +69,7 @@ class TacticalExplanationEngine:
         if not use_fallback:
             try:
                 system_prompt = PromptBuilder.build_system_prompt(elo=effective_elo, elo_tier=elo_tier)
-                user_prompt = PromptBuilder.build_user_prompt(recommendation, user_notes=user_notes)
+                user_prompt = PromptBuilder.build_user_prompt(recommendation, user_notes=user_notes, ruleset=ruleset)
 
                 parsed_json, raw_text, gen_latency_ms = self.client.generate(
                     system_prompt=system_prompt,
@@ -100,6 +102,8 @@ class TacticalExplanationEngine:
         verification_result = HallucinationVerifier.verify_and_sanitize(
             explanation=explanation,
             recommendation=recommendation,
+            ruleset=ruleset,
+            patch_version=patch_version,
         )
 
         total_latency_ms = round((time.perf_counter() - start_time) * 1000.0, 2)
@@ -121,6 +125,8 @@ class TacticalExplanationEngine:
         user_notes: Optional[str] = None,
         force_fallback: Optional[bool] = None,
         config_override: Optional[LLMConfig] = None,
+        ruleset: Optional[Any] = None,
+        patch_version: Optional[str] = None,
     ) -> VerifiedCoachingResponse:
         """
         Generate structured, verified coaching response asynchronously.
@@ -140,7 +146,7 @@ class TacticalExplanationEngine:
         if not use_fallback:
             try:
                 system_prompt = PromptBuilder.build_system_prompt(elo=effective_elo, elo_tier=elo_tier)
-                user_prompt = PromptBuilder.build_user_prompt(recommendation, user_notes=user_notes)
+                user_prompt = PromptBuilder.build_user_prompt(recommendation, user_notes=user_notes, ruleset=ruleset)
 
                 parsed_json, raw_text, gen_latency_ms = await self.client.async_generate(
                     system_prompt=system_prompt,
@@ -170,6 +176,8 @@ class TacticalExplanationEngine:
         verification_result = HallucinationVerifier.verify_and_sanitize(
             explanation=explanation,
             recommendation=recommendation,
+            ruleset=ruleset,
+            patch_version=patch_version,
         )
 
         total_latency_ms = round((time.perf_counter() - start_time) * 1000.0, 2)

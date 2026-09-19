@@ -5,7 +5,7 @@ Encodes all 45+ civilizations, unique units, unique techs, team bonuses,
 civ bonuses, tech trees, and disabled unit/tech graphs.
 """
 
-from typing import Dict, List, Optional, Set, Union
+from typing import Dict, List, Optional, Set, Union, Any
 from pydantic import BaseModel, Field
 from aoe2_coach.schemas.game_constants import Age, CIVILIZATIONS, CIV_NAME_TO_ID
 from aoe2_coach.rules.units import ResourceCost
@@ -854,56 +854,119 @@ CIVILIZATIONS_DATABASE: Dict[str, CivInfo] = {
 
 
 # -------------------------------------------------------------
-# Query & Validation Functions
+# Query & Validation Functions (Versioned with Backwards-Compatible Fallback)
 # -------------------------------------------------------------
-def get_civ_info(civ: Union[str, int]) -> Optional[CivInfo]:
-    """Retrieve full civilization information by ID or canonical name."""
+def get_civ_info(civ: Union[str, int], patch_version: Optional[str] = None, ruleset: Optional[Any] = None) -> Optional[CivInfo]:
+    """Retrieve full civilization information by ID or canonical name for a given ruleset/version."""
+    if ruleset is not None:
+        return ruleset.get_civ_info(civ)
+    if patch_version is not None:
+        from aoe2_coach.rules.game_ruleset import RulesRegistry
+        return RulesRegistry.get(patch_version).get_civ_info(civ)
+
+    # Check RulesRegistry default first if initialized, else fall back to local database
+    try:
+        from aoe2_coach.rules.game_ruleset import RulesRegistry
+        active = RulesRegistry.get("latest")
+        res = active.get_civ_info(civ)
+        if res is not None:
+            return res
+    except Exception:
+        pass
+
     if isinstance(civ, int):
         civ_name = CIVILIZATIONS.get(civ, "").lower()
     else:
-        civ_name = civ.lower()
+        civ_name = str(civ).lower().strip()
     return CIVILIZATIONS_DATABASE.get(civ_name)
 
 
-def is_unit_available(civ: Union[str, int], unit_id: str, age: Optional[Age] = None) -> bool:
-    """Check if a unit is available to a given civilization at an optional age."""
+def is_unit_available(
+    civ: Union[str, int],
+    unit_id: str,
+    age: Optional[Age] = None,
+    patch_version: Optional[str] = None,
+    ruleset: Optional[Any] = None,
+) -> bool:
+    """Check if a unit is available to a given civilization at an optional age and patch version."""
+    if ruleset is not None:
+        return ruleset.is_unit_available(civ, unit_id, age)
+    if patch_version is not None:
+        from aoe2_coach.rules.game_ruleset import RulesRegistry
+        return RulesRegistry.get(patch_version).is_unit_available(civ, unit_id, age)
+
     info = get_civ_info(civ)
     if not info:
         return True
     
-    unit_id_clean = unit_id.lower()
+    unit_id_clean = unit_id.lower().strip()
     if unit_id_clean in info.disabled_units:
         return False
         
+    from aoe2_coach.rules.units import get_unit_stats
+    stats = get_unit_stats(unit_id_clean)
+    if stats and stats.is_unique:
+        return unit_id_clean in [u.lower() for u in info.unique_units]
+
     return True
 
 
-def is_tech_available(civ: Union[str, int], tech_id: str, age: Optional[Age] = None) -> bool:
-    """Check if a technology is available to a given civilization."""
+def is_tech_available(
+    civ: Union[str, int],
+    tech_id: str,
+    age: Optional[Age] = None,
+    patch_version: Optional[str] = None,
+    ruleset: Optional[Any] = None,
+) -> bool:
+    """Check if a technology is available to a given civilization at an optional patch version."""
+    if ruleset is not None:
+        return ruleset.is_tech_available(civ, tech_id, age)
+    if patch_version is not None:
+        from aoe2_coach.rules.game_ruleset import RulesRegistry
+        return RulesRegistry.get(patch_version).is_tech_available(civ, tech_id, age)
+
     info = get_civ_info(civ)
     if not info:
         return True
         
-    tech_id_clean = tech_id.lower()
+    tech_id_clean = tech_id.lower().strip()
     if tech_id_clean in info.disabled_techs:
         return False
         
     return True
 
 
-def is_building_available(civ: Union[str, int], building_id: str) -> bool:
-    """Check if a building is constructible by a given civilization."""
+def is_building_available(
+    civ: Union[str, int],
+    building_id: str,
+    patch_version: Optional[str] = None,
+    ruleset: Optional[Any] = None,
+) -> bool:
+    """Check if a building is constructible by a given civilization at an optional patch version."""
+    if ruleset is not None:
+        return ruleset.is_building_available(civ, building_id)
+    if patch_version is not None:
+        from aoe2_coach.rules.game_ruleset import RulesRegistry
+        return RulesRegistry.get(patch_version).is_building_available(civ, building_id)
+
     info = get_civ_info(civ)
     if not info:
         return True
         
-    b_clean = building_id.lower()
+    b_clean = building_id.lower().strip()
     if b_clean in info.disabled_buildings:
         return False
         
     return True
 
 
-def get_all_civs() -> List[CivInfo]:
-    """Return list of all 45 civilizations."""
+def get_all_civs(patch_version: Optional[str] = None, ruleset: Optional[Any] = None) -> List[CivInfo]:
+    """Return list of civilizations for the specified patch version."""
+    if ruleset is not None:
+        return [ruleset.get_civ_info(cid) for cid in ruleset.civilizations.values() if ruleset.get_civ_info(cid)]
+    if patch_version is not None:
+        from aoe2_coach.rules.game_ruleset import RulesRegistry
+        r = RulesRegistry.get(patch_version)
+        return [r.get_civ_info(cid) for cid in r.civilizations.values() if r.get_civ_info(cid)]
+
     return list(CIVILIZATIONS_DATABASE.values())

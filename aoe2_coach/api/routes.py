@@ -106,9 +106,9 @@ async def simulate_combat_engagement(
 
 
 @router.get("/meta/civs", response_model=List[Dict[str, Any]], tags=["Metadata"])
-async def get_civilizations(service: CoachAPIService = Depends(get_service)):
-    """List of all 45+ AoE2 civilizations with bonuses and unique units."""
-    return service.get_civ_list()
+async def get_civilizations(patch_version: str = "latest", service: CoachAPIService = Depends(get_service)):
+    """List of all AoE2 civilizations with bonuses and unique units for the requested patch."""
+    return service.get_civ_list(patch_version=patch_version)
 
 
 @router.get("/meta/units", response_model=List[Dict[str, Any]], tags=["Metadata"])

@@ -5,7 +5,7 @@ Analyzes sighted enemy forces, identifies threat archetypes and armor vulnerabil
 filters player civ tech tree restrictions, and ranks optimal military counter responses.
 """
 
-from typing import Dict, List, Optional, Tuple, Set, Union
+from typing import Dict, List, Optional, Tuple, Set, Union, Any
 from pydantic import BaseModel, Field
 from aoe2_coach.schemas.game_constants import Age
 from aoe2_coach.rules.armor_classes import ArmorClass
@@ -48,8 +48,9 @@ class CounterMatrixEngine:
     Tactical decision engine matching enemy compositions to player's optimal civilizational response.
     """
 
-    def __init__(self):
-        pass
+    def __init__(self, ruleset: Optional[Any] = None, patch_version: Optional[str] = None):
+        self.ruleset = ruleset
+        self.patch_version = patch_version
 
     def analyze_threat(
         self,
@@ -133,12 +134,14 @@ class CounterMatrixEngine:
         enemy_units: Dict[str, int],
         enemy_civ: Optional[str] = None,
         player_current_army: Optional[Dict[str, int]] = None,
+        ruleset: Optional[Any] = None,
     ) -> CounterMatrixResult:
         """
         Generate ranked counter options for player's civ against observed enemy units.
         """
+        active_ruleset = ruleset or self.ruleset
         threat = self.analyze_threat(enemy_units, enemy_civ, enemy_age=player_age)
-        civ_info = get_civ_info(player_civ)
+        civ_info = get_civ_info(player_civ, ruleset=active_ruleset)
         civ_name = civ_info.name if civ_info else str(player_civ)
 
         # Get dominant enemy stats
@@ -151,7 +154,7 @@ class CounterMatrixEngine:
         for u_id, u_stat in UNITS_DATABASE.items():
             if u_stat.age > player_age:
                 continue
-            if not is_unit_available(player_civ, u_id):
+            if not is_unit_available(player_civ, u_id, ruleset=active_ruleset):
                 continue
             if u_stat.is_unique and u_stat.civ and u_stat.civ.lower() != civ_name.lower():
                 continue
@@ -164,6 +167,7 @@ class CounterMatrixEngine:
                 enemy_stat,
                 unit1_civ=civ_name,
                 unit2_civ=enemy_civ,
+                ruleset=active_ruleset,
             )
 
             # Determine key technologies

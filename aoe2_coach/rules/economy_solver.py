@@ -7,7 +7,7 @@ and outputs optimal villager rebalancing plans.
 """
 
 import math
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union, Any
 from pydantic import BaseModel, Field
 from aoe2_coach.schemas.match import VillagerAllocation, ResourceStockpile
 from aoe2_coach.schemas.game_constants import BASE_GATHER_RATES, Age
@@ -50,22 +50,41 @@ class EconomySolver:
     Mathematical economic optimizer for Age of Empires II macro gameplay.
     """
 
-    def __init__(self):
-        pass
+    def __init__(self, ruleset: Optional[Any] = None, patch_version: Optional[str] = None):
+        self.ruleset = ruleset
+        self.patch_version = patch_version
 
     def calculate_gather_rates(
         self,
         researched_techs: Optional[List[str]] = None,
         civ: Optional[str] = None,
+        ruleset: Optional[Any] = None,
     ) -> GatherRates:
         """
         Calculate adjusted resource gather rates per second per villager
         accounting for all eco techs and civilization bonuses.
         """
+        active_ruleset = ruleset or self.ruleset
+        if active_ruleset is not None:
+            base_rates = active_ruleset.base_gather_rates
+        elif self.patch_version is not None:
+            from aoe2_coach.rules.game_ruleset import RulesRegistry
+            base_rates = RulesRegistry.get(self.patch_version).base_gather_rates
+        else:
+            base_rates = BASE_GATHER_RATES
+
         tech_set = set(t.lower() for t in (researched_techs or []))
         civ_lower = civ.lower() if civ else ""
 
-        rates = GatherRates()
+        rates = GatherRates(
+            food_farm=base_rates.get("food_farm", 0.35),
+            food_berries=base_rates.get("food_berries", 0.31),
+            food_sheep=base_rates.get("food_sheep", 0.33),
+            food_hunt=base_rates.get("food_hunt", 0.41),
+            wood=base_rates.get("wood", 0.39),
+            gold=base_rates.get("gold", 0.38),
+            stone=base_rates.get("stone", 0.36),
+        )
 
         # 1. Wood Techs
         wood_mult = 1.0
@@ -78,7 +97,7 @@ class EconomySolver:
         if civ_lower == "celts":
             wood_mult += 0.15
 
-        rates.wood = round(BASE_GATHER_RATES["wood"] * wood_mult, 3)
+        rates.wood = round(base_rates["wood"] * wood_mult, 3)
 
         # 2. Farming / Food Techs
         farm_mult = 1.0
@@ -89,15 +108,15 @@ class EconomySolver:
         if civ_lower == "slavs":
             farm_mult += 0.10
 
-        rates.food_farm = round(BASE_GATHER_RATES["food_farm"] * farm_mult, 3)
+        rates.food_farm = round(base_rates["food_farm"] * farm_mult, 3)
 
         # Civ Food Gathering Bonuses
         if civ_lower == "franks":
-            rates.food_berries = round(BASE_GATHER_RATES["food_berries"] * 1.15, 3)
+            rates.food_berries = round(base_rates["food_berries"] * 1.15, 3)
         if civ_lower == "britons":
-            rates.food_sheep = round(BASE_GATHER_RATES["food_sheep"] * 1.25, 3)
+            rates.food_sheep = round(base_rates["food_sheep"] * 1.25, 3)
         if civ_lower == "mongols":
-            rates.food_hunt = round(BASE_GATHER_RATES["food_hunt"] * 1.40, 3)
+            rates.food_hunt = round(base_rates["food_hunt"] * 1.40, 3)
 
         # 3. Gold Techs
         gold_mult = 1.0
@@ -108,7 +127,7 @@ class EconomySolver:
         if civ_lower == "turks":
             gold_mult += 0.20
 
-        rates.gold = round(BASE_GATHER_RATES["gold"] * gold_mult, 3)
+        rates.gold = round(base_rates["gold"] * gold_mult, 3)
 
         # 4. Stone Techs
         stone_mult = 1.0
@@ -119,7 +138,7 @@ class EconomySolver:
         if civ_lower == "koreans":
             stone_mult += 0.20
 
-        rates.stone = round(BASE_GATHER_RATES["stone"] * stone_mult, 3)
+        rates.stone = round(base_rates["stone"] * stone_mult, 3)
 
         # 5. Aztec universal carry capacity bonus (+3 capacity ~ 6% gather rate)
         if civ_lower == "aztecs":
@@ -132,8 +151,8 @@ class EconomySolver:
 
     def calculate_farm_wood_tax(
         self,
-        food_gather_rate: float,
         num_farmers: int,
+        food_gather_rate: float,
         researched_techs: Optional[List[str]] = None,
         civ: Optional[str] = None,
     ) -> float:
@@ -172,12 +191,13 @@ class EconomySolver:
         target_production: Dict[str, int],  # e.g., {"villager": 1, "knight": 2}
         researched_techs: Optional[List[str]] = None,
         civ: Optional[str] = None,
+        ruleset: Optional[Any] = None,
     ) -> EconomyOptimizationResult:
         """
         Solve optimal villager distribution to sustain continuous production targets
         and balance stockpiles.
         """
-        gather_rates = self.calculate_gather_rates(researched_techs, civ)
+        gather_rates = self.calculate_gather_rates(researched_techs, civ, ruleset=ruleset)
         total_vills = current_vills.total
 
         # 1. Calculate required consumption rates (resources per second)

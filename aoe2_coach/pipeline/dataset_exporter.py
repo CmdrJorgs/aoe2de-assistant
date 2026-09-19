@@ -98,7 +98,27 @@ class DatasetExporter:
             return 0
 
         flat_dicts = [s.to_flat_dict() for s in snapshots]
+        if partition_by_patch:
+            self.write_partitioned_by_patch(flat_dicts, base_dir=os.path.dirname(output_filepath))
         return self.write_flat_records_to_parquet(flat_dicts, output_filepath)
+
+    def write_partitioned_by_patch(
+        self, records: List[Dict[str, Any]], base_dir: Optional[str] = None
+    ) -> Dict[str, str]:
+        """Write records partitioned by patch_version (e.g. data/processed/patch=101.103.x/snapshots.parquet)."""
+        target_dir = base_dir or self.output_dir
+        os.makedirs(target_dir, exist_ok=True)
+        by_patch: Dict[str, List[Dict[str, Any]]] = {}
+        for r in records:
+            p = r.get("patch_version", "101.103.x")
+            by_patch.setdefault(p, []).append(r)
+        
+        output_paths: Dict[str, str] = {}
+        for patch, patch_records in by_patch.items():
+            patch_path = os.path.join(target_dir, f"patch={patch}", "snapshots.parquet")
+            self.write_flat_records_to_parquet(patch_records, patch_path)
+            output_paths[patch] = patch_path
+        return output_paths
 
     def write_flat_records_to_parquet(
         self, records: List[Dict[str, Any]], output_filepath: str

@@ -70,12 +70,15 @@ CIV_COMPOSITION_AFFINITIES: Dict[str, Dict[str, float]] = {
     "goths": {"unique_unit_line": 0.45, "champion_line": 0.30, "pike_line": 0.20},
     "huns": {"knight_line": 0.40, "scout_line": 0.25, "crossbow_line": 0.25},
     "vikings": {"unique_unit_line": 0.35, "champion_line": 0.30, "crossbow_line": 0.25, "pike_line": 0.15},
+    "jurchens": {"knight_line": 0.45, "siege_line": 0.35, "unique_unit_line": 0.30},
+    "khitans": {"unique_unit_line": 0.45, "scout_line": 0.30, "crossbow_line": 0.20},
+    "shu": {"champion_line": 0.40, "crossbow_line": 0.35, "unique_unit_line": 0.25},
 }
 
 
 def map_counter_unit_to_comp(unit_name: str) -> str:
     u = unit_name.lower().replace(" ", "_")
-    if any(k in u for k in ["knight", "cavalier", "paladin", "boyar", "monaspa", "coustillier", "szlachta"]):
+    if any(k in u for k in ["knight", "cavalier", "paladin", "boyar", "monaspa", "coustillier", "szlachta", "iron_pagoda"]):
         return "knight_line"
     elif any(k in u for k in ["crossbow", "archer", "arbalest", "arbalester", "longbow", "composite_bow", "rattan"]):
         return "crossbow_line"
@@ -89,7 +92,7 @@ def map_counter_unit_to_comp(unit_name: str) -> str:
         return "siege_line"
     elif any(k in u for k in ["monk", "missionary"]):
         return "monk_line"
-    elif any(k in u for k in ["cataphract", "janissary", "huskarl", "berserk", "leitis", "chu_ko_nu", "plumed", "conquistador", "jaguar", "woad", "obuch", "urumi", "mameluke", "shrivamsha", "ballista_elephant", "battle_elephant"]):
+    elif any(k in u for k in ["cataphract", "janissary", "huskarl", "berserk", "leitis", "chu_ko_nu", "plumed", "conquistador", "jaguar", "woad", "obuch", "urumi", "mameluke", "shrivamsha", "ballista_elephant", "battle_elephant", "ordo_cavalry", "zhuge_vanguard"]):
         return "unique_unit_line"
     elif any(k in u for k in ["militia", "man_at_arms", "long_swordsman", "champion", "legionary", "eagle"]):
         return "champion_line"
@@ -106,6 +109,7 @@ class MatchContext(BaseModel):
     player_age_name: str
     game_time_sec: float
     formatted_time: str
+    patch_version: str = "101.103.x"
 
 
 class MLRecommendation(BaseModel):
@@ -118,6 +122,7 @@ class MLRecommendation(BaseModel):
     tactical_stance: StanceTimingResult
     actionable_checklist: List[str] = Field(default_factory=list)
     inference_latency_ms: float = 0.0
+    patch_version: str = "101.103.x"
 
 
 class MLInferenceService:
@@ -128,13 +133,38 @@ class MLInferenceService:
 
     def __init__(
         self,
-        artifacts_dir: str = "aoe2_coach/models/artifacts",
+        artifacts_dir: Optional[str] = None,
         use_onnx: bool = True,
+        ruleset: Optional[Any] = None,
+        patch_version: Optional[str] = None,
     ):
-        self.artifacts_dir = artifacts_dir
-        self.encoder = FeatureEncoder()
-        self.counter_engine = CounterMatrixEngine()
-        self.economy_solver = EconomySolver()
+        if ruleset is not None:
+            self.ruleset = ruleset
+        elif patch_version is not None:
+            from aoe2_coach.rules.game_ruleset import RulesRegistry
+            self.ruleset = RulesRegistry.get(patch_version)
+        else:
+            try:
+                from aoe2_coach.rules.game_ruleset import RulesRegistry
+                self.ruleset = RulesRegistry.get("latest")
+            except Exception:
+                self.ruleset = None
+
+        if artifacts_dir:
+            self.artifacts_dir = artifacts_dir
+        elif self.ruleset and hasattr(self.ruleset, "patch_version"):
+            p_dir = os.path.join("aoe2_coach/models/artifacts", self.ruleset.patch_version)
+            if os.path.exists(p_dir):
+                self.artifacts_dir = p_dir
+            else:
+                self.artifacts_dir = "aoe2_coach/models/artifacts"
+        else:
+            self.artifacts_dir = "aoe2_coach/models/artifacts"
+
+        self.patch_version = self.ruleset.patch_version if (self.ruleset and hasattr(self.ruleset, "patch_version")) else (patch_version or "101.103.x")
+        self.encoder = FeatureEncoder(ruleset=self.ruleset, patch_version=self.patch_version)
+        self.counter_engine = CounterMatrixEngine(ruleset=self.ruleset)
+        self.economy_solver = EconomySolver(ruleset=self.ruleset)
 
         # ML Models (Python backends)
         self.strategy_classifier = StrategyClassifier()
@@ -147,7 +177,7 @@ class MLInferenceService:
 
         # ONNX Engine
         self.use_onnx = use_onnx
-        self.onnx_engine = ONNXInferenceEngine(artifacts_dir=artifacts_dir) if use_onnx else None
+        self.onnx_engine = ONNXInferenceEngine(artifacts_dir=self.artifacts_dir) if use_onnx else None
 
     def _load_joblib_models(self) -> None:
         """Load persisted joblib model files if present."""
@@ -236,9 +266,13 @@ class MLInferenceService:
         )
 
         # 3. Candidate Strategy Selector: Fuse ML predictions + Counter Matrix + Civ Tech Constraints
+        raw_strat_probs = None
         if self.use_onnx and self.onnx_engine and self.onnx_engine.is_loaded:
-            raw_strat_probs = self.onnx_engine.predict_strategy_proba(X)[0].copy()
-        else:
+            try:
+                raw_strat_probs = self.onnx_engine.predict_strategy_proba(X)[0].copy()
+            except Exception as e:
+                logger.debug(f"ONNX strategy prediction fallback: {e}")
+        if raw_strat_probs is None:
             raw_strat_probs = self.strategy_classifier.predict_proba(X)[0].copy()
 
         # Build fused score array
@@ -346,57 +380,67 @@ class MLInferenceService:
         )
 
         # 4. ML Win Probability Estimation
+        win_res = None
         if self.use_onnx and self.onnx_engine and self.onnx_engine.is_loaded:
-            win_p = float(self.onnx_engine.predict_win_probability(X)[0])
-            win_p = max(0.01, min(0.99, win_p))
-            adv_level = classify_advantage_level(win_p)
-            vec = X[0]
-            mil_adv = float(vec[60]) if len(vec) > 60 else 0.0
-            vill_adv = float(vec[61]) if len(vec) > 61 else 0.0
-            p_cav_aff = float(vec[50]) if len(vec) > 50 else 0.5
-            opp_cav_aff = float(vec[55]) if len(vec) > 55 else 0.5
-            civ_score = (p_cav_aff - opp_cav_aff) * 0.2
+            try:
+                win_p = float(self.onnx_engine.predict_win_probability(X)[0])
+                win_p = max(0.01, min(0.99, win_p))
+                adv_level = classify_advantage_level(win_p)
+                vec = X[0]
+                mil_adv = float(vec[60]) if len(vec) > 60 else 0.0
+                vill_adv = float(vec[61]) if len(vec) > 61 else 0.0
+                p_cav_aff = float(vec[50]) if len(vec) > 50 else 0.5
+                opp_cav_aff = float(vec[55]) if len(vec) > 55 else 0.5
+                civ_score = (p_cav_aff - opp_cav_aff) * 0.2
 
-            factors: List[str] = []
-            if vill_adv > 0.15:
-                factors.append(f"Strong economy & villager production momentum (+{round(vill_adv * 100)}% ahead)")
-            elif vill_adv < -0.15:
-                factors.append(f"Economy lagging behind standard benchmarks ({round(vill_adv * 100)}% deficit)")
+                factors: List[str] = []
+                if vill_adv > 0.15:
+                    factors.append(f"Strong economy & villager production momentum (+{round(vill_adv * 100)}% ahead)")
+                elif vill_adv < -0.15:
+                    factors.append(f"Economy lagging behind standard benchmarks ({round(vill_adv * 100)}% deficit)")
 
-            if mil_adv > 0.20:
-                factors.append(f"Military superiority and map control presence (+{round(mil_adv * 100)}% army power)")
-            elif mil_adv < -0.20:
-                factors.append(f"Vulnerable to enemy military push ({round(abs(mil_adv) * 100)}% army deficit)")
+                if mil_adv > 0.20:
+                    factors.append(f"Military superiority and map control presence (+{round(mil_adv * 100)}% army power)")
+                elif mil_adv < -0.20:
+                    factors.append(f"Vulnerable to enemy military push ({round(abs(mil_adv) * 100)}% army deficit)")
 
-            if float(vec[14]) > 0.5:
-                factors.append("Unspent stockpile floating: Excess wood delaying farm & military output")
+                if float(vec[14]) > 0.5:
+                    factors.append("Unspent stockpile floating: Excess wood delaying farm & military output")
 
-            if not factors:
-                factors.append("Match is in a closely contested balanced state")
+                if not factors:
+                    factors.append("Match is in a closely contested balanced state")
 
-            win_res = WinProbabilityResult(
-                win_probability=round(win_p, 4),
-                advantage_level=adv_level,
-                eco_advantage_score=round(vill_adv, 3),
-                military_advantage_score=round(mil_adv, 3),
-                civ_matchup_score=round(civ_score, 3),
-                key_win_factors=factors,
-                summary=f"Estimated Win Probability: {round(win_p * 100, 1)}% ({adv_level.replace('_', ' ').title()}).",
-            )
-        else:
+                win_res = WinProbabilityResult(
+                    win_probability=round(win_p, 4),
+                    advantage_level=adv_level,
+                    eco_advantage_score=round(vill_adv, 3),
+                    military_advantage_score=round(mil_adv, 3),
+                    civ_matchup_score=round(civ_score, 3),
+                    key_win_factors=factors,
+                    summary=f"Estimated Win Probability: {round(win_p * 100, 1)}% ({adv_level.replace('_', ' ').title()}).",
+                )
+            except Exception as e:
+                logger.debug(f"ONNX win probability fallback: {e}")
+
+        if win_res is None:
             win_res = self.win_estimator.evaluate(X)
 
         # 5. ML Economic Rebalance + Solver
+        eco_plan = None
         if self.use_onnx and self.onnx_engine and self.onnx_engine.is_loaded:
-            onnx_ratios = self.onnx_engine.predict_economic_ratios(X)[0]
-            eco_plan = self.economic_rebalancer.recommend_rebalance(
-                state_or_vector=X,
-                current_vills=current_vills,
-                current_stockpile=current_stockpile,
-                strategy_comp=strategy_plan.primary_composition,
-                custom_ratios=onnx_ratios,
-            )
-        else:
+            try:
+                onnx_ratios = self.onnx_engine.predict_economic_ratios(X)[0]
+                eco_plan = self.economic_rebalancer.recommend_rebalance(
+                    state_or_vector=X,
+                    current_vills=current_vills,
+                    current_stockpile=current_stockpile,
+                    strategy_comp=strategy_plan.primary_composition,
+                    custom_ratios=onnx_ratios,
+                )
+            except Exception as e:
+                logger.debug(f"ONNX economic rebalancer fallback: {e}")
+
+        if eco_plan is None:
             eco_plan = self.economic_rebalancer.recommend_rebalance(
                 state_or_vector=X,
                 current_vills=current_vills,
@@ -405,68 +449,73 @@ class MLInferenceService:
             )
 
         # 6. ML Stance & Timing Prediction
+        stance_res = None
         if self.use_onnx and self.onnx_engine and self.onnx_engine.is_loaded:
-            raw_stance_probs = self.onnx_engine.predict_stance_proba(X)[0].copy()
-            top_stance_idx = int(np.argmax(raw_stance_probs))
-            top_stance = STANCE_CLASSES[top_stance_idx]
-            conf = float(raw_stance_probs[top_stance_idx])
-            civ_power_spike = f"{p_civ.title()} Age {p_age_int} strategic window."
-            threat_alert = ""
-            attack_win = 240
-            urgency = "medium"
+            try:
+                raw_stance_probs = self.onnx_engine.predict_stance_proba(X)[0].copy()
+                top_stance_idx = int(np.argmax(raw_stance_probs))
+                top_stance = STANCE_CLASSES[top_stance_idx]
+                conf = float(raw_stance_probs[top_stance_idx])
+                civ_power_spike = f"{p_civ.title()} Age {p_age_int} strategic window."
+                threat_alert = ""
+                attack_win = 240
+                urgency = "medium"
 
-            # Contextual adjustments based on game state, age & civ bonuses
-            mil_total = int(state_dict.get("military_total", state_dict.get("player_military_total", 0)))
-            if p_age_int == 2:  # Feudal Age
-                if top_stance in ("FAST_IMPERIAL_BOOM", "RELIC_HILL_CONTROL"):
-                    top_stance = "FORWARD_PRESSURE"
-            elif p_age_int == 3:  # Castle Age
-                if top_stance == "FAST_IMPERIAL_BOOM" and mil_total > 3:
-                    top_stance = "FORWARD_PRESSURE"
+                # Contextual adjustments based on game state, age & civ bonuses
+                mil_total = int(state_dict.get("military_total", state_dict.get("player_military_total", 0)))
+                if p_age_int == 2:  # Feudal Age
+                    if top_stance in ("FAST_IMPERIAL_BOOM", "RELIC_HILL_CONTROL"):
+                        top_stance = "FORWARD_PRESSURE"
+                elif p_age_int == 3:  # Castle Age
+                    if top_stance == "FAST_IMPERIAL_BOOM" and mil_total > 3:
+                        top_stance = "FORWARD_PRESSURE"
 
-            if p_civ.lower() == "franks" and p_age_int == 3:
-                civ_power_spike = "Castle Age Knight HP Power Spike (+20% HP). Overpower infantry and archers now!"
-                attack_win = 180
-                urgency = "immediate"
-                top_stance = "FORWARD_PRESSURE" if top_stance != "ALL_IN_AGGRESSION" else top_stance
-            elif p_civ.lower() == "britons" and p_age_int in (2, 3):
-                civ_power_spike = "Archery Range Advantage. Kite enemy infantry and establish hill control."
-                top_stance = "FORWARD_PRESSURE" if top_stance not in ("FORWARD_PRESSURE", "RELIC_HILL_CONTROL") else top_stance
-            elif p_civ.lower() in ("aztecs", "lithuanians") and p_age_int == 3:
-                civ_power_spike = "Relic & Monastery Advantage. Prioritize monk relic capture and defense."
-                if counter_result.threat_analysis.threat_level in ("high", "critical"):
+                if p_civ.lower() == "franks" and p_age_int == 3:
+                    civ_power_spike = "Castle Age Knight HP Power Spike (+20% HP). Overpower infantry and archers now!"
+                    attack_win = 180
+                    urgency = "immediate"
+                    top_stance = "FORWARD_PRESSURE" if top_stance != "ALL_IN_AGGRESSION" else top_stance
+                elif p_civ.lower() == "britons" and p_age_int in (2, 3):
+                    civ_power_spike = "Archery Range Advantage. Kite enemy infantry and establish hill control."
+                    top_stance = "FORWARD_PRESSURE" if top_stance not in ("FORWARD_PRESSURE", "RELIC_HILL_CONTROL") else top_stance
+                elif p_civ.lower() in ("aztecs", "lithuanians") and p_age_int == 3:
+                    civ_power_spike = "Relic & Monastery Advantage. Prioritize monk relic capture and defense."
+                    if counter_result.threat_analysis.threat_level in ("high", "critical"):
+                        top_stance = "DEFENSIVE_TURTLING"
+                    else:
+                        top_stance = "RELIC_HILL_CONTROL"
+                elif p_civ.lower() == "turks" and p_age_int == 3:
+                    civ_power_spike = "Janissary / Fast Castle power spike. Overwhelm enemy perimeter."
+                    top_stance = "ALL_IN_AGGRESSION"
+                elif p_civ.lower() == "byzantines" and p_age_int == 4:
+                    top_stance = "ALL_IN_AGGRESSION"
+
+                if counter_result.threat_analysis.threat_level == "critical" and win_p < 0.45:
                     top_stance = "DEFENSIVE_TURTLING"
-                else:
-                    top_stance = "RELIC_HILL_CONTROL"
-            elif p_civ.lower() == "turks" and p_age_int == 3:
-                civ_power_spike = "Janissary / Fast Castle power spike. Overwhelm enemy perimeter."
-                top_stance = "ALL_IN_AGGRESSION"
-            elif p_civ.lower() == "byzantines" and p_age_int == 4:
-                top_stance = "ALL_IN_AGGRESSION"
+                    urgency = "defend_now"
 
-            if counter_result.threat_analysis.threat_level == "critical" and win_p < 0.45:
-                top_stance = "DEFENSIVE_TURTLING"
-                urgency = "defend_now"
+                if opp_civ.lower() == "vikings" and p_age_int == 3:
+                    threat_alert = "Warning: Do not allow Vikings to mass Elite Berserkers with Berserkergang in Imperial Age. Strike now!"
 
-            if opp_civ.lower() == "vikings" and p_age_int == 3:
-                threat_alert = "Warning: Do not allow Vikings to mass Elite Berserkers with Berserkergang in Imperial Age. Strike now!"
+                if top_stance == "ALL_IN_AGGRESSION":
+                    urgency = "immediate"
+                    attack_win = min(180, attack_win)
+                elif top_stance == "DEFENSIVE_TURTLING":
+                    urgency = "defend_now"
 
-            if top_stance == "ALL_IN_AGGRESSION":
-                urgency = "immediate"
-                attack_win = min(180, attack_win)
-            elif top_stance == "DEFENSIVE_TURTLING":
-                urgency = "defend_now"
+                stance_res = StanceTimingResult(
+                    recommended_stance=top_stance,
+                    stance_confidence=round(conf, 4),
+                    attack_window_sec=attack_win,
+                    urgency=urgency,
+                    civ_power_spike=civ_power_spike,
+                    threat_spike_alert=threat_alert,
+                    summary=f"Tactical Stance: {top_stance.replace('_', ' ').title()} ({round(conf * 100)}% conf).",
+                )
+            except Exception as e:
+                logger.debug(f"ONNX stance predictor fallback: {e}")
 
-            stance_res = StanceTimingResult(
-                recommended_stance=top_stance,
-                stance_confidence=round(conf, 4),
-                attack_window_sec=attack_win,
-                urgency=urgency,
-                civ_power_spike=civ_power_spike,
-                threat_spike_alert=threat_alert,
-                summary=f"Tactical Stance: {top_stance.replace('_', ' ').title()} ({round(conf * 100)}% conf).",
-            )
-        else:
+        if stance_res is None:
             stance_res = self.stance_predictor.evaluate_timing_and_stance(
                 state_or_vector=X,
                 player_civ=p_civ,
@@ -501,6 +550,7 @@ class MLInferenceService:
             player_age_name=age_enum.display_name,
             game_time_sec=t_sec,
             formatted_time=formatted_time,
+            patch_version=self.patch_version,
         )
 
         return MLRecommendation(
@@ -513,6 +563,7 @@ class MLInferenceService:
             tactical_stance=stance_res,
             actionable_checklist=checklist,
             inference_latency_ms=latency_ms,
+            patch_version=self.patch_version,
         )
 
     def benchmark_latency(self, iterations: int = 100) -> Dict[str, float]:

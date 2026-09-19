@@ -214,24 +214,40 @@ class FeatureEncoder:
     Ensures exact feature parity across training and real-time ONNX inference.
     """
 
-    def __init__(self):
+    def __init__(self, ruleset: Optional[Any] = None, patch_version: Optional[str] = None):
+        if ruleset is not None:
+            self.ruleset = ruleset
+        elif patch_version is not None:
+            from aoe2_coach.rules.game_ruleset import RulesRegistry
+            self.ruleset = RulesRegistry.get(patch_version)
+        else:
+            try:
+                from aoe2_coach.rules.game_ruleset import RulesRegistry
+                self.ruleset = RulesRegistry.get("latest")
+            except Exception:
+                self.ruleset = None
+
         self.feature_names = list(FEATURE_NAMES)
         self.num_features = len(self.feature_names)
 
     def _get_civ_id_and_name(self, civ: Union[str, int, None]) -> Tuple[int, str]:
         """Normalize civ representation to (id, lowercase_name)."""
+        civ_map = self.ruleset.civilizations if self.ruleset else CIVILIZATIONS
+        name_map = self.ruleset.civ_name_to_id if self.ruleset else CIV_NAME_TO_ID
         if isinstance(civ, int):
             cid = civ
-            cname = CIVILIZATIONS.get(cid, "unknown").lower()
+            cname = civ_map.get(cid, "unknown").lower()
             return cid, cname
         elif isinstance(civ, str):
             cname = civ.lower().strip()
-            cid = CIV_NAME_TO_ID.get(cname, 0)
+            cid = name_map.get(cname, 0)
             return cid, cname
         return 0, "unknown"
 
     def _get_civ_affinities(self, civ_name: str) -> Dict[str, float]:
         """Look up civilization strategic archetype affinities."""
+        if self.ruleset and hasattr(self.ruleset, "civ_archetypes"):
+            return self.ruleset.civ_archetypes.get(civ_name.lower(), DEFAULT_ARCHETYPE)
         return CIV_ARCHETYPES.get(civ_name.lower(), DEFAULT_ARCHETYPE)
 
     def encode_snapshot(self, snapshot: GameSnapshot) -> np.ndarray:
@@ -402,8 +418,9 @@ class FeatureEncoder:
         p_aff = self._get_civ_affinities(p_cname)
         opp_aff = self._get_civ_affinities(opp_cname)
 
-        p_cid_norm = p_cid / 50.0
-        opp_cid_norm = opp_cid / 50.0
+        denom_civs = float(self.ruleset.num_civs) if self.ruleset else 50.0
+        p_cid_norm = p_cid / denom_civs
+        opp_cid_norm = opp_cid / denom_civs
 
         # Relative advantages
         rel_mil_adv = (mil_tot - opp_mil_tot) / max(1.0, mil_tot + opp_mil_tot)

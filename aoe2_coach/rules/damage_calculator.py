@@ -6,7 +6,7 @@ blacksmith upgrades, elevation modifiers, civ bonuses, and 1v1 / army combat sim
 """
 
 import math
-from typing import Dict, List, Optional, Tuple, Set
+from typing import Dict, List, Optional, Tuple, Set, Any
 from pydantic import BaseModel, Field
 from aoe2_coach.rules.armor_classes import ArmorClass
 from aoe2_coach.rules.units import UnitStats, get_unit_stats, ResourceCost
@@ -158,6 +158,8 @@ def calculate_damage_breakdown(
     elevation: str = "flat",  # "high", "low", "flat"
     attacker_civ: Optional[str] = None,
     defender_civ: Optional[str] = None,
+    elevation_advantage: Optional[float] = None,
+    ruleset: Optional[Any] = None,
 ) -> DamageBreakdown:
     """
     Calculate exact damage per strike from attacker to defender according to AoE2 engine rules.
@@ -191,19 +193,20 @@ def calculate_damage_breakdown(
     base_net = max(1.0, float(raw_damage))
 
     # 3. Elevation Multiplier
+    adv = ruleset.elevation_advantage if ruleset is not None else (elevation_advantage if elevation_advantage is not None else 0.25)
     elevation_mult = 1.0
     if elevation == "high":
         # Attacker is on hill
         if attacker_civ and attacker_civ.lower() == "tatars":
             elevation_mult = 1.50  # Tatars +50% hill damage
         else:
-            elevation_mult = 1.25  # Standard +25%
+            elevation_mult = 1.0 + adv  # Standard hill advantage
     elif elevation == "low":
         # Defender is on hill
         if defender_civ and defender_civ.lower() == "georgians":
             elevation_mult = 0.85  # Georgians take less damage
         else:
-            elevation_mult = 0.75  # Standard -25%
+            elevation_mult = max(0.1, 1.0 - adv)  # Standard hill penalty
 
     net_damage_per_hit = max(1.0, base_net * elevation_mult)
     effective_damage_per_shot = net_damage_per_hit * attacker.accuracy
@@ -237,6 +240,8 @@ def simulate_duel(
     unit1_civ: Optional[str] = None,
     unit2_civ: Optional[str] = None,
     elevation: str = "flat",
+    elevation_advantage: Optional[float] = None,
+    ruleset: Optional[Any] = None,
 ) -> DuelSimulationResult:
     """
     Simulate a deterministic 1v1 duel between two units with given upgrades and civ modifiers.
@@ -249,6 +254,7 @@ def simulate_duel(
         (unit1_civ or "").lower(),
         (unit2_civ or "").lower(),
         elevation,
+        elevation_advantage or (ruleset.elevation_advantage if ruleset else 0.25),
     )
     if cache_key in _DUEL_CACHE:
         return _DUEL_CACHE[cache_key]
@@ -256,8 +262,14 @@ def simulate_duel(
     u1 = apply_tech_and_civ_modifiers(unit1, unit1_techs, unit1_civ)
     u2 = apply_tech_and_civ_modifiers(unit2, unit2_techs, unit2_civ)
 
-    outcome_1_on_2 = calculate_damage_breakdown(u1, u2, elevation=elevation, attacker_civ=unit1_civ, defender_civ=unit2_civ)
-    outcome_2_on_1 = calculate_damage_breakdown(u2, u1, elevation=elevation, attacker_civ=unit2_civ, defender_civ=unit1_civ)
+    outcome_1_on_2 = calculate_damage_breakdown(
+        u1, u2, elevation=elevation, attacker_civ=unit1_civ, defender_civ=unit2_civ,
+        elevation_advantage=elevation_advantage, ruleset=ruleset
+    )
+    outcome_2_on_1 = calculate_damage_breakdown(
+        u2, u1, elevation=elevation, attacker_civ=unit2_civ, defender_civ=unit1_civ,
+        elevation_advantage=elevation_advantage, ruleset=ruleset
+    )
 
     ttk_1 = outcome_1_on_2.time_to_kill_sec
     ttk_2 = outcome_2_on_1.time_to_kill_sec

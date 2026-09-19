@@ -1,5 +1,6 @@
 {
-  "num_features": 65,
+  "patch_version": "101.103.x",
+  "num_features": 76,
   "feature_names": [
     "timestamp_min",
     "player_age",
@@ -65,7 +66,18 @@
     "rel_villager_advantage_est",
     "rel_cav_vs_opp_archer",
     "rel_archer_vs_opp_inf",
-    "rel_inf_vs_opp_cav"
+    "rel_inf_vs_opp_cav",
+    "cav_matchup_delta",
+    "arch_matchup_delta",
+    "inf_matchup_delta",
+    "siege_matchup_delta",
+    "monk_matchup_delta",
+    "cav_vs_opp_arch_interaction",
+    "arch_vs_opp_inf_interaction",
+    "inf_vs_opp_cav_interaction",
+    "eco_kill_rate_est",
+    "military_build_velocity",
+    "vill_pacing_efficiency"
   ],
   "composition_classes": [
     "knight_line",

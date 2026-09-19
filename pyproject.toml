@@ -41,6 +41,9 @@ include = ["aoe2_coach*"]
 [tool.pytest.ini_options]
 testpaths = ["aoe2_coach/tests"]
 python_files = ["test_*.py"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+]
 filterwarnings = [
     "ignore::DeprecationWarning",
 ]

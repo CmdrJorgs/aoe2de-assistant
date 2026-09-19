@@ -50,6 +50,8 @@ class HallucinationVerifier:
         cls,
         explanation: CoachingExplanation,
         recommendation: MLRecommendation,
+        ruleset: Optional[Any] = None,
+        patch_version: Optional[str] = None,
     ) -> HallucinationCheckResult:
         """
         Verify all fields of a coaching explanation against ground-truth game rules.
@@ -58,11 +60,18 @@ class HallucinationVerifier:
         violations: List[str] = []
         corrections: List[str] = []
 
+        from aoe2_coach.rules.game_ruleset import RulesRegistry
         ctx = recommendation.match_context
+        active_patch = patch_version or getattr(recommendation, "patch_version", getattr(ctx, "patch_version", "101.103.x"))
+        active_ruleset = ruleset or RulesRegistry.get(active_patch)
+
         player_civ = ctx.player_civ
         player_age_int = ctx.player_age
         age_enum = Age(player_age_int) if player_age_int in (1, 2, 3, 4) else Age.CASTLE
-        civ_info = get_civ_info(player_civ)
+        civ_info = active_ruleset.get_civ_info(player_civ)
+
+        if not active_ruleset.is_civ_supported(player_civ):
+            violations.append(f"Civilization '{player_civ}' is not supported in patch {active_ruleset.patch_version}.")
 
         # Clone objects for sanitization
         mil = explanation.military_plan.model_copy()
@@ -74,16 +83,20 @@ class HallucinationVerifier:
         # 1. Military Unit Validation (Tech Tree & Civ Restrictions)
         # -------------------------------------------------------------
         primary_id = _normalize_identifier(mil.primary_unit_recommendation)
-        primary_valid = is_unit_available(player_civ, primary_id, age_enum)
+        primary_valid = is_unit_available(player_civ, primary_id, age_enum, ruleset=active_ruleset)
 
-        # Check for unique unit of another civ
+        # Check for unique unit of another civ or unsupported civ
         unit_stats = get_unit_stats(primary_id)
         if unit_stats and unit_stats.is_unique and unit_stats.civ:
-            if civ_info and unit_stats.civ.lower() != civ_info.name.lower():
+            if not active_ruleset.is_civ_supported(unit_stats.civ):
                 primary_valid = False
+            elif civ_info and unit_stats.civ.lower() != civ_info.name.lower():
+                primary_valid = False
+        elif civ_info is None:
+            primary_valid = False
 
         if not primary_valid:
-            violation_msg = f"Illegal unit: '{mil.primary_unit_recommendation}' is not available to civilization '{player_civ}'."
+            violation_msg = f"Illegal unit: '{mil.primary_unit_recommendation}' is not available to civilization '{player_civ}' in patch {active_ruleset.patch_version}."
             violations.append(violation_msg)
             
             # Auto-correct from counter matrix engine
@@ -97,14 +110,18 @@ class HallucinationVerifier:
         # Validate secondary unit if present
         if mil.secondary_unit_recommendation:
             sec_id = _normalize_identifier(mil.secondary_unit_recommendation)
-            sec_valid = is_unit_available(player_civ, sec_id, age_enum)
+            sec_valid = is_unit_available(player_civ, sec_id, age_enum, ruleset=active_ruleset)
             sec_stats = get_unit_stats(sec_id)
             if sec_stats and sec_stats.is_unique and sec_stats.civ:
-                if civ_info and sec_stats.civ.lower() != civ_info.name.lower():
+                if not active_ruleset.is_civ_supported(sec_stats.civ):
                     sec_valid = False
+                elif civ_info and sec_stats.civ.lower() != civ_info.name.lower():
+                    sec_valid = False
+            elif civ_info is None:
+                sec_valid = False
 
             if not sec_valid:
-                violations.append(f"Illegal secondary unit: '{mil.secondary_unit_recommendation}' is not available to '{player_civ}'.")
+                violations.append(f"Illegal secondary unit: '{mil.secondary_unit_recommendation}' is not available to '{player_civ}' in patch {active_ruleset.patch_version}.")
                 mil.secondary_unit_recommendation = recommendation.counter_matrix.secondary_support_unit
                 corrections.append(f"Auto-corrected secondary unit to '{mil.secondary_unit_recommendation}'.")
 
@@ -118,7 +135,7 @@ class HallucinationVerifier:
 
             if tech_info:
                 # Check civ availability
-                if not is_tech_available(player_civ, tech_id):
+                if not is_tech_available(player_civ, tech_id, ruleset=active_ruleset):
                     violations.append(f"Illegal tech: '{tech}' is disabled for civilization '{player_civ}'.")
                     corrections.append(f"Removed unavailable tech '{tech}'.")
                     continue

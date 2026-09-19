@@ -5,7 +5,7 @@ Orchestrates ML inference, rules evaluation, LLM explanations, and combat simula
 
 import time
 import logging
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Dict, List, Optional, Any, Tuple, Union
 from aoe2_coach.schemas.game_constants import (
     Age,
     CIVILIZATIONS,
@@ -44,24 +44,28 @@ from aoe2_coach.api.schemas import (
 logger = logging.getLogger(__name__)
 
 
-def resolve_civ_id(civ_input: str) -> int:
+def resolve_civ_id(civ_input: Union[str, int], ruleset: Optional[Any] = None) -> int:
     """Resolve civ string name or int to valid civ ID."""
+    from aoe2_coach.rules.game_ruleset import RulesRegistry
+    active_ruleset = ruleset or RulesRegistry.get("latest")
     if isinstance(civ_input, int):
-        return civ_input if civ_input in CIVILIZATIONS else 1
+        return civ_input if civ_input in active_ruleset.civilizations else 1
     if str(civ_input).isdigit():
         cid = int(civ_input)
-        return cid if cid in CIVILIZATIONS else 1
+        return cid if cid in active_ruleset.civilizations else 1
     clean = str(civ_input).strip().lower()
-    return CIV_NAME_TO_ID.get(clean, 1)
+    return active_ruleset.civ_name_to_id.get(clean, 1)
 
 
 def snapshot_input_to_game_snapshot(inp: SnapshotInput) -> GameSnapshot:
     """Convert API SnapshotInput into domain GameSnapshot object."""
-    p_civ_id = resolve_civ_id(inp.player_civ)
-    p_civ_name = get_civ_name(p_civ_id)
+    from aoe2_coach.rules.game_ruleset import RulesRegistry
+    ruleset = RulesRegistry.get(inp.patch_version)
+    p_civ_id = resolve_civ_id(inp.player_civ, ruleset=ruleset)
+    p_civ_name = ruleset.civilizations.get(p_civ_id, "Franks")
     
-    o_civ_id = resolve_civ_id(inp.opponent_civ)
-    o_civ_name = get_civ_name(o_civ_id)
+    o_civ_id = resolve_civ_id(inp.opponent_civ, ruleset=ruleset)
+    o_civ_name = ruleset.civilizations.get(o_civ_id, "Vikings")
     
     vills_total = inp.vills_total or (inp.vills_food + inp.vills_wood + inp.vills_gold + inp.vills_stone)
     game_time_sec = int(inp.game_time_minutes * 60)
@@ -126,7 +130,7 @@ def snapshot_input_to_game_snapshot(inp: SnapshotInput) -> GameSnapshot:
     
     return GameSnapshot(
         match_id="web-session",
-        patch_version="101.102.x",
+        patch_version=ruleset.patch_version,
         timestamp_sec=game_time_sec,
         map_type="Arabia",
         player=player_state,
@@ -139,9 +143,6 @@ class CoachAPIService:
     """Singleton service manager for AoE2 Coach API."""
 
     def __init__(self, llm_config: Optional[LLMConfig] = None):
-        self.ml_service = MLInferenceService()
-        self.counter_engine = CounterMatrixEngine()
-        self.economy_solver = EconomySolver()
         self.llm_config = llm_config or LLMConfig(
             base_url="http://127.0.0.1:8081/v1",
             model="qwen3.8-4b",
@@ -150,16 +151,39 @@ class CoachAPIService:
         )
         self.explanation_engine = TacticalExplanationEngine(config=self.llm_config)
 
+    def get_ml_service(self, patch_version: str = "latest") -> MLInferenceService:
+        from aoe2_coach.models.model_registry import ModelRegistry
+        return ModelRegistry.get_service(patch_version)
+
+    @property
+    def ml_service(self) -> MLInferenceService:
+        return self.get_ml_service("latest")
+
+    @property
+    def counter_engine(self) -> CounterMatrixEngine:
+        from aoe2_coach.rules.game_ruleset import RulesRegistry
+        return CounterMatrixEngine(ruleset=RulesRegistry.get("latest"))
+
+    @property
+    def economy_solver(self) -> EconomySolver:
+        from aoe2_coach.rules.game_ruleset import RulesRegistry
+        return EconomySolver(ruleset=RulesRegistry.get("latest"))
+
     def check_health(self) -> HealthResponse:
         """Check system status."""
-        onnx_ready = bool(self.ml_service.onnx_engine and self.ml_service.onnx_engine.is_loaded)
+        from aoe2_coach.rules.game_ruleset import RulesRegistry
+        latest_ruleset = RulesRegistry.get("latest")
+        default_ml = self.get_ml_service("latest")
+        onnx_ready = bool(default_ml.onnx_engine and default_ml.onnx_engine.is_loaded)
         return HealthResponse(
             status="healthy",
             version="1.0.0",
             onnx_loaded=onnx_ready,
             llm_connected=True,
-            civs_count=len(CIVILIZATIONS),
+            civs_count=latest_ruleset.num_civs,
             units_count=len(UNITS_DATABASE),
+            active_patch=latest_ruleset.patch_version,
+            supported_patches=RulesRegistry.list_supported_versions(),
         )
 
     def generate_recommendation(self, input_data: SnapshotInput) -> RecommendationResponse:
@@ -171,9 +195,10 @@ class CoachAPIService:
         
         # 1. Convert snapshot
         snapshot = snapshot_input_to_game_snapshot(input_data)
+        ml_service = self.get_ml_service(input_data.patch_version)
         
         # 2. Run ML + Rules inference
-        ml_rec = self.ml_service.get_recommendation(snapshot)
+        ml_rec = ml_service.get_recommendation(snapshot)
         t_ml_done = time.perf_counter()
         ml_latency = round((t_ml_done - t_start) * 1000.0, 2)
         
@@ -183,12 +208,15 @@ class CoachAPIService:
             elo_override=input_data.player_elo,
             user_notes=input_data.user_notes,
             force_fallback=input_data.force_fallback,
+            ruleset=ml_service.ruleset,
+            patch_version=ml_service.patch_version,
         )
         t_exp_done = time.perf_counter()
         exp_latency = round((t_exp_done - t_ml_done) * 1000.0, 2)
         total_latency = round((t_exp_done - t_start) * 1000.0, 2)
         
         return RecommendationResponse(
+            patch_version=ml_service.patch_version,
             match_context=ml_rec.match_context.model_dump(),
             primary_directive=verified_resp.explanation.primary_directive or ml_rec.primary_directive,
             win_probability=ml_rec.win_probability.model_dump(),
@@ -205,12 +233,16 @@ class CoachAPIService:
 
     def compute_counter_matrix(self, req: CounterMatrixRequest) -> CounterMatrixResponse:
         """Compute counter recommendations against specified enemy army."""
+        from aoe2_coach.rules.game_ruleset import RulesRegistry
+        ruleset = RulesRegistry.get(req.patch_version)
+        counter_engine = CounterMatrixEngine(ruleset=ruleset)
         age_enum = Age(req.current_age) if req.current_age in (1, 2, 3, 4) else Age.CASTLE
         
-        res = self.counter_engine.recommend_counters(
+        res = counter_engine.recommend_counters(
             player_civ=req.player_civ,
             player_age=age_enum,
             enemy_units=req.enemy_army,
+            ruleset=ruleset,
         )
         
         threat_dict = res.threat_analysis.model_dump()
@@ -227,10 +259,14 @@ class CoachAPIService:
                 "building": res.production_building_target,
                 "summary": res.tactical_summary,
             }],
+            patch_version=ruleset.patch_version,
         )
 
     def solve_economy(self, req: EconomySolverRequest) -> EconomySolverResponse:
         """Compute exact villager allocation for given military goals."""
+        from aoe2_coach.rules.game_ruleset import RulesRegistry
+        ruleset = RulesRegistry.get(req.patch_version)
+        economy_solver = EconomySolver(ruleset=ruleset)
         target_prod = {g.unit_name.lower(): g.building_count for g in req.production_goals}
         
         cur_vills_dict = req.current_vills or {"food": 16, "wood": 14, "gold": 6, "stone": 2}
@@ -251,12 +287,13 @@ class CoachAPIService:
             stone=cur_stockpile_dict.get("stone", 0),
         )
         
-        res = self.economy_solver.solve_economy_balance(
+        res = economy_solver.solve_economy_balance(
             current_vills=cur_alloc,
             current_stockpile=stockpile,
             target_production=target_prod,
             researched_techs=req.researched_upgrades,
             civ=req.civ,
+            ruleset=ruleset,
         )
         
         return EconomySolverResponse(
@@ -285,10 +322,13 @@ class CoachAPIService:
             },
             delta_shifts=res.allocation_deltas,
             action_advice=res.actionable_rebalance_steps or [res.summary],
+            patch_version=ruleset.patch_version,
         )
 
     def simulate_combat(self, req: CombatSimRequest) -> CombatSimResponse:
         """Run combat simulation between two unit lines."""
+        from aoe2_coach.rules.game_ruleset import RulesRegistry
+        ruleset = RulesRegistry.get(req.patch_version)
         unit_a = get_unit_stats(req.attacker_unit.lower()) or list(UNITS_DATABASE.values())[0]
         unit_b = get_unit_stats(req.defender_unit.lower()) or list(UNITS_DATABASE.values())[1]
         
@@ -300,6 +340,7 @@ class CoachAPIService:
             elevation=elev_str,
             attacker_civ=req.attacker_civ,
             defender_civ=req.defender_civ,
+            ruleset=ruleset,
         )
         
         dmg_b_to_a = calculate_damage_breakdown(
@@ -308,6 +349,7 @@ class CoachAPIService:
             elevation="low" if req.elevation_diff > 0 else ("high" if req.elevation_diff < 0 else "flat"),
             attacker_civ=req.defender_civ,
             defender_civ=req.attacker_civ,
+            ruleset=ruleset,
         )
         
         duel = simulate_duel(
@@ -318,6 +360,7 @@ class CoachAPIService:
             unit1_civ=req.attacker_civ,
             unit2_civ=req.defender_civ,
             elevation=elev_str,
+            ruleset=ruleset,
         )
         
         # Calculate army engagement estimates
@@ -361,14 +404,16 @@ class CoachAPIService:
             remaining_defenders=surv_b,
             cost_efficiency_ratio=duel.cost_efficiency,
             tactical_summary=summary,
+            patch_version=ruleset.patch_version,
         )
 
-    def get_civ_list(self) -> List[Dict[str, Any]]:
+    def get_civ_list(self, patch_version: str = "latest") -> List[Dict[str, Any]]:
         """Get all civilizations with details."""
+        from aoe2_coach.rules.game_ruleset import RulesRegistry
+        ruleset = RulesRegistry.get(patch_version)
         res = []
-        for name, cid in sorted(CIV_NAME_TO_ID.items(), key=lambda x: x[1]):
-            civ_name = get_civ_name(cid)
-            info = get_civ_info(civ_name)
+        for cid, civ_name in sorted(ruleset.civilizations.items(), key=lambda x: x[0]):
+            info = ruleset.get_civ_info(civ_name)
             res.append({
                 "id": cid,
                 "name": civ_name,

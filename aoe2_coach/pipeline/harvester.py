@@ -115,8 +115,8 @@ class MetadataStore:
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(match_id) DO UPDATE SET
                     file_id = COALESCE(excluded.file_id, matches.file_id),
-                    downloaded = excluded.downloaded,
-                    local_file_path = COALESCE(excluded.local_file_path, matches.local_file_path)
+                    downloaded = CASE WHEN matches.downloaded != 0 THEN matches.downloaded ELSE excluded.downloaded END,
+                    local_file_path = COALESCE(matches.local_file_path, excluded.local_file_path)
             """, (
                 match.match_id, match.started, match.map_name, match.leaderboard,
                 match.player1_name, match.player1_elo, match.player1_civ,

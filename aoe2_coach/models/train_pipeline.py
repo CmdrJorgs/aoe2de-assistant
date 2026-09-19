@@ -34,19 +34,29 @@ logger = logging.getLogger(__name__)
 def generate_augmented_training_dataset(
     base_df: Optional[pd.DataFrame] = None,
     num_synthetic_samples: int = 2500,
+    patch_version: str = "101.103.x",
+    ruleset: Optional[Any] = None,
 ) -> pd.DataFrame:
     """
-    Generate a diverse, comprehensive training dataset covering all 45 civilizations,
+    Generate a diverse, comprehensive training dataset covering all civilizations for the target patch,
     all ages (Feudal, Castle, Imp), and tactical counter-compositions.
     """
+    from aoe2_coach.rules.game_ruleset import RulesRegistry
+    active_ruleset = ruleset or RulesRegistry.get(patch_version)
     records: List[Dict[str, Any]] = []
 
     if base_df is not None and not base_df.empty:
-        records.extend(base_df.to_dict(orient="records"))
+        if "patch_version" in base_df.columns:
+            # Strictly filter base dataset for target patch
+            clean_ver = active_ruleset.patch_version[:7]
+            filtered = base_df[base_df["patch_version"].str.contains(clean_ver, na=False)]
+            records.extend(filtered.to_dict(orient="records"))
+        else:
+            records.extend(base_df.to_dict(orient="records"))
 
-    logger.info(f"Augmenting dataset with {num_synthetic_samples} multi-civ high-ELO game scenarios...")
+    logger.info(f"Augmenting dataset for patch {active_ruleset.patch_version} with {num_synthetic_samples} multi-civ scenarios...")
 
-    civ_names = list(CIVILIZATIONS.values())
+    civ_names = list(active_ruleset.civilizations.values())
     np.random.seed(42)
 
     for i in range(num_synthetic_samples):
@@ -62,7 +72,7 @@ def generate_augmented_training_dataset(
         elo = int(np.random.normal(loc=1400, scale=250))
 
         # Civ archetype affinities
-        p_aff = CIV_ARCHETYPES.get(p_civ.lower(), {"cavalry": 0.5, "archer": 0.5, "infantry": 0.5, "siege": 0.5, "monk": 0.5})
+        p_aff = active_ruleset.civ_archetypes.get(p_civ.lower(), {"cavalry": 0.5, "archer": 0.5, "infantry": 0.5, "siege": 0.5, "monk": 0.5})
 
         # Determine logical winning composition
         opp_sighted_cav = int(np.random.poisson(lam=4 if p_age >= 3 else 2))
@@ -117,7 +127,7 @@ def generate_augmented_training_dataset(
         stone_stock = int(np.random.exponential(scale=100))
 
         # Win probability conditions with civ matchup synergy and eco kills
-        opp_aff = CIV_ARCHETYPES.get(opp_civ.lower(), {"cavalry": 0.5, "archer": 0.5, "infantry": 0.5, "siege": 0.5, "monk": 0.5})
+        opp_aff = active_ruleset.civ_archetypes.get(opp_civ.lower(), {"cavalry": 0.5, "archer": 0.5, "infantry": 0.5, "siege": 0.5, "monk": 0.5})
         civ_synergy = (
             (p_aff["cavalry"] * opp_aff["archer"])
             + (p_aff["archer"] * opp_aff["infantry"])
@@ -150,7 +160,7 @@ def generate_augmented_training_dataset(
 
         row = {
             "match_id": f"syn_{i:05d}",
-            "patch_version": "101.102.x",
+            "patch_version": active_ruleset.patch_version,
             "timestamp_sec": t_sec,
             "map_type": "Arabia",
             "player_civ_id": 1,
@@ -195,6 +205,8 @@ def run_training_pipeline(
     processed_parquet: str = "data/processed/snapshots.parquet",
     artifacts_dir: str = "aoe2_coach/models/artifacts",
     max_replays_to_parse: int = 40,
+    patch_version: str = "101.103.x",
+    ruleset: Optional[Any] = None,
 ) -> Dict[str, Any]:
     """
     End-to-end training pipeline:
@@ -204,7 +216,17 @@ def run_training_pipeline(
     4. Validate on holdout test split.
     5. Export to ONNX.
     """
-    logger.info("=== Commencing Phase 3 Machine Learning Training Pipeline ===")
+    from aoe2_coach.rules.game_ruleset import RulesRegistry
+    active_ruleset = ruleset or RulesRegistry.get(patch_version)
+    target_patch = active_ruleset.patch_version
+
+    logger.info(f"=== Commencing Phase 3 Machine Learning Training Pipeline for Patch {target_patch} ===")
+
+    if not artifacts_dir.endswith(target_patch):
+        target_artifacts_dir = os.path.join(artifacts_dir, target_patch)
+    else:
+        target_artifacts_dir = artifacts_dir
+    os.makedirs(target_artifacts_dir, exist_ok=True)
 
     # 1. Ingest Replays / Snapshots
     base_df = None
@@ -222,11 +244,16 @@ def run_training_pipeline(
                 base_df = pd.read_parquet(processed_parquet)
 
     # 2. Augment dataset
-    df = generate_augmented_training_dataset(base_df=base_df, num_synthetic_samples=3000)
-    logger.info(f"Total training records assembled: {len(df)}")
+    df = generate_augmented_training_dataset(
+        base_df=base_df,
+        num_synthetic_samples=3000,
+        patch_version=target_patch,
+        ruleset=active_ruleset,
+    )
+    logger.info(f"Total training records assembled for {target_patch}: {len(df)}")
 
     # 3. Feature Encoding
-    encoder = FeatureEncoder()
+    encoder = FeatureEncoder(ruleset=active_ruleset, patch_version=target_patch)
     X = encoder.encode_dataframe(df)
     logger.info(f"Encoded feature matrix shape: {X.shape} (Features: {encoder.num_features})")
 
@@ -292,37 +319,55 @@ def run_training_pipeline(
     stance_acc = accuracy_score(y_stance_test, pred_stance_test)
     logger.info(f"Stance Predictor Test Accuracy: {round(stance_acc * 100, 2)}%")
 
-    # 5. Export to ONNX
-    logger.info(f"--- Exporting Models to ONNX in {artifacts_dir} ---")
+    # 5. Export to ONNX and joblib in version-specific directory
+    logger.info(f"--- Exporting Models to {target_artifacts_dir} ---")
     exporter = ONNXExporter(num_features=encoder.num_features)
     exported_paths = exporter.export_all(
         strategy_classifier=strategy_clf,
         win_estimator=win_estimator,
         economic_rebalancer=eco_rebalancer,
         stance_predictor=stance_predictor,
-        artifacts_dir=artifacts_dir,
+        artifacts_dir=target_artifacts_dir,
+        patch_version=target_patch,
     )
 
-    # Also persist scikit-learn models for native fallback
-    strategy_clf.save(os.path.join(artifacts_dir, "strategy_classifier.joblib"))
-    win_estimator.save(os.path.join(artifacts_dir, "win_probability_estimator.joblib"))
-    eco_rebalancer.save(os.path.join(artifacts_dir, "economic_rebalancer.joblib"))
-    stance_predictor.save(os.path.join(artifacts_dir, "stance_predictor.joblib"))
+    # Persist scikit-learn models for native fallback
+    strategy_clf.save(os.path.join(target_artifacts_dir, "strategy_classifier.joblib"))
+    win_estimator.save(os.path.join(target_artifacts_dir, "win_probability_estimator.joblib"))
+    eco_rebalancer.save(os.path.join(target_artifacts_dir, "economic_rebalancer.joblib"))
+    stance_predictor.save(os.path.join(target_artifacts_dir, "stance_predictor.joblib"))
 
-    # Also copy to root models/artifacts for project accessibility
-    root_artifacts_dir = "models/artifacts"
-    if os.path.abspath(root_artifacts_dir) != os.path.abspath(artifacts_dir):
+    # Also update root artifacts directory if target is latest or root artifacts directory requested
+    if target_patch == RulesRegistry.get_latest_version():
+        logger.info(f"Updating root artifacts in {artifacts_dir} with latest models ({target_patch})")
         exporter.export_all(
             strategy_classifier=strategy_clf,
             win_estimator=win_estimator,
             economic_rebalancer=eco_rebalancer,
             stance_predictor=stance_predictor,
-            artifacts_dir=root_artifacts_dir,
+            artifacts_dir=artifacts_dir,
+            patch_version=target_patch,
         )
+        strategy_clf.save(os.path.join(artifacts_dir, "strategy_classifier.joblib"))
+        win_estimator.save(os.path.join(artifacts_dir, "win_probability_estimator.joblib"))
+        eco_rebalancer.save(os.path.join(artifacts_dir, "economic_rebalancer.joblib"))
+        stance_predictor.save(os.path.join(artifacts_dir, "stance_predictor.joblib"))
 
-    logger.info("=== Phase 3 ML Model Development & ONNX Export Complete ===")
+        root_artifacts_dir = "models/artifacts"
+        if os.path.exists(root_artifacts_dir) and os.path.abspath(root_artifacts_dir) != os.path.abspath(artifacts_dir):
+            exporter.export_all(
+                strategy_classifier=strategy_clf,
+                win_estimator=win_estimator,
+                economic_rebalancer=eco_rebalancer,
+                stance_predictor=stance_predictor,
+                artifacts_dir=root_artifacts_dir,
+                patch_version=target_patch,
+            )
+
+    logger.info(f"=== Phase 3 ML Model Development & ONNX Export Complete for {target_patch} ===")
 
     return {
+        "patch_version": target_patch,
         "strategy_accuracy": round(strat_acc, 4),
         "win_roc_auc": round(win_auc, 4),
         "eco_mae": round(eco_mae, 4),
@@ -336,10 +381,12 @@ if __name__ == "__main__":
     parser.add_argument("--replays-dir", default="data/raw")
     parser.add_argument("--processed-parquet", default="data/processed/snapshots.parquet")
     parser.add_argument("--artifacts-dir", default="aoe2_coach/models/artifacts")
+    parser.add_argument("--patch-version", default="101.103.x")
     args = parser.parse_args()
 
     run_training_pipeline(
         replays_dir=args.replays_dir,
         processed_parquet=args.processed_parquet,
         artifacts_dir=args.artifacts_dir,
+        patch_version=args.patch_version,
     )
