@@ -18,9 +18,9 @@ September 16, 2026
 
 ### **Abstract**
 
-Real-time strategy (RTS) games represent one of the most challenging frontiers in artificial intelligence and human-computer interaction, characterized by imperfect information, immense combinatorial action spaces, and high-frequency cognitive demands under fog-of-war. In complex environments such as *Age of Empires II: Definitive Edition* (AoE2:DE)—which features 45 distinct civilizations, asymmetric technology trees, and multi-resource macroeconomic balancing—human players frequently suffer from severe cognitive overload. While existing analytical tools provide retrospective, post-mortem statistics (e.g., CaptureAge, AoE2Insights), players lack in-situ, real-time decision support capable of translating live telemetry into actionable tactical directives. General-purpose foundation large language models (LLMs) deployed zero-shot fail catastrophically in this domain due to civilization tech-tree hallucinations, excessive verbosity, high inference latency, and schema unreliability. This paper proposes `aoe2-coach`, a generative decision-support architecture that synthesizes live match telemetry into concise, skill-adapted tactical recommendations. Leveraging a hybrid neuro-symbolic framework that couples deterministic domain engines (strict technology trees, combat counter matrices, and continuous rate-drain economic optimization solvers) with a hosted fine-tuned foundation model (OpenAI `gpt-4o-mini`), the system produces skill-calibrated coaching directives tailored to player rating (Elo) tiers. This milestone proposal formalizes the project concept, delineates four core operational and empirical goals, outlines the initial end-to-end methodological approach, and discusses anticipated design evolutions across the project lifecycle.
+Real-time strategy (RTS) games represent one of the most challenging frontiers in artificial intelligence and human-computer interaction, characterized by imperfect information, immense combinatorial action spaces, and high-frequency cognitive demands under fog-of-war. In complex environments such as *Age of Empires II: Definitive Edition* (AoE2:DE)—which features 45 distinct civilizations, asymmetric technology trees, and multi-resource macroeconomic balancing—human players frequently suffer from severe cognitive overload. While existing analytical tools provide retrospective, post-mortem statistics (e.g., CaptureAge, AoE2Insights), players lack in-situ, real-time decision support capable of translating live telemetry into actionable tactical directives. General-purpose foundation large language models (LLMs) deployed zero-shot fail catastrophically in this domain due to civilization tech-tree hallucinations, excessive verbosity, high inference latency, and schema unreliability. This paper proposes `aoe2-coach`, a generative decision-support architecture that synthesizes live match telemetry into concise, skill-adapted tactical recommendations. Leveraging a hybrid neuro-symbolic framework that couples deterministic domain engines (strict technology trees, combat counter matrices, and continuous rate-drain economic optimization solvers) with a hosted fine-tuned transformer model (Google `gemini-1.5-flash` on Google Cloud), the system produces skill-calibrated coaching directives tailored to player rating (Elo) tiers. By executing on Google's serverless cloud infrastructure, the architecture incurs $0 standby hosting costs and introduces zero local GPU, VRAM, or CPU resource contention on the host machine running the game. This milestone proposal formalizes the project concept, delineates four core operational and empirical goals, outlines the initial end-to-end methodological approach, and discusses anticipated design evolutions across the project lifecycle.
 
-*Keywords:* Generative AI, Real-Time Strategy, Cognitive Load Theory, Supervised Fine-Tuning, Elo Calibration, Tech-Tree Grounding, Decision Support Systems, Age of Empires II
+*Keywords:* Generative AI, Real-Time Strategy, Cognitive Load Theory, Supervised Fine-Tuning, Elo Calibration, Tech-Tree Grounding, Decision Support Systems, Age of Empires II, Transformer Models
 
 ---
 
@@ -58,7 +58,7 @@ Despite their analytical sophistication, these tools suffer from a fundamental s
 
 ### **Limitations of General-Purpose Foundation Models**
 
-The emergence of modern instruction-tuned Large Language Models (LLMs) such as GPT-4, GPT-4o-mini, and Llama 3 offers a promising foundation for automated conversational coaching (Achiam et al., 2023; Brown et al., 2020; Ouyang et al., 2022). However, zero-shot and few-shot deployments of general-purpose foundation models consistently fail when applied to real-time competitive RTS coaching due to four domain-specific failure modes:
+The emergence of modern transformer-based Large Language Models (LLMs) such as Gemini 1.5 Flash, GPT-4, and Llama 3 offers a promising foundation for automated conversational coaching (Achiam et al., 2023; Brown et al., 2020; Gemini Team, 2024; Ouyang et al., 2022). However, zero-shot and few-shot deployments of general-purpose foundation models consistently fail when applied to real-time competitive RTS coaching due to four domain-specific failure modes:
 
 #### *Civilization Tech-Tree Hallucinations*
 Foundation models possess probabilistic, associative recall of historical and gaming literature rather than strict ontological constraints. In AoE2:DE, civilization technology trees are strictly bounded across all 45 civilizations: Mesoamerican civilizations (Aztecs, Mayans, Incas) possess no Stables and cannot produce cavalry; civilizations such as Britons lack the Paladin upgrade; civilizations such as Byzantines lack Bloodlines; and Gothic units benefit from unique infantry cost discounts. In empirical zero-shot baseline queries, off-the-shelf LLMs routinely hallucinate non-existent military options—for example, instructing an Aztec player facing heavy cavalry to "construct two Stables and mass Knights." In a competitive match, executing an impossible directive guarantees defeat.
@@ -77,7 +77,7 @@ To integrate seamlessly into a real-time web dashboard or heads-up display (HUD)
 
 ### **The `aoe2-coach` Solution**
 
-The `aoe2-coach` architecture directly addresses these limitations through a hybrid neuro-symbolic approach. By pairing deterministic computational rules engines with hosted supervised fine-tuning of an efficient foundation model (OpenAI `gpt-4o-mini`), the system distills strict domain logic—tech-tree graph traversals, combat damage matrices, and continuous rate-drain economic formulas—into model weights. This delivers instantaneous, zero-hallucination, Elo-calibrated tactical synthesis while using compact system prompts.
+The `aoe2-coach` architecture directly addresses these limitations through a hybrid neuro-symbolic approach. By pairing deterministic computational rules engines with hosted supervised fine-tuning of an efficient, transformer-based foundation model (Google `gemini-1.5-flash` hosted via Google AI Studio and Vertex AI), the system distills strict domain logic—tech-tree graph traversals, combat damage matrices, and continuous rate-drain economic formulas—into model weights. Crucially, hosted serverless execution eliminates local hardware competition with *Age of Empires II: Definitive Edition* on the host PC, reserving 100% of local GPU VRAM and CPU cycles for the game simulation while avoiding idle endpoint hosting fees. This delivers instantaneous, zero-hallucination, Elo-calibrated tactical synthesis using compact system prompts.
 
 ---
 
@@ -125,7 +125,7 @@ The third and most critical technical goal is the complete elimination of civili
 The fourth goal is to achieve production-grade operational reliability necessary for live application deployment:
 - **100% Structured Output Compliance**: Every model inference must parse cleanly against the predefined Pydantic JSON schema (`TacticalCoachResponse`) without missing keys, hallucinated attributes, conversational wrappers, or markdown syntax artifacts.
 - **Sub-Second Inference Latency**: By eliminating multi-thousand-token in-context reference manuals and fine-tuning domain knowledge directly into model weights, total inference latency must remain under 1.0–1.5 seconds, ensuring recommendations remain tactically relevant in real time.
-- **Rigorous Statistical Superiority over Baseline Models**: In formal benchmark comparisons against zero-shot foundation baselines (`gpt-4o-mini`, `gpt-3.5-turbo`) across a suite of held-out test scenarios:
+- **Rigorous Statistical Superiority over Baseline Models**: In formal benchmark comparisons against zero-shot transformer baselines (`gemini-1.5-flash`, `gpt-4o-mini`) across a suite of held-out test scenarios:
   - Categorical failure rates (tech-tree hallucination rate and schema failure rate) will be evaluated for statistical significance using **McNemar’s test for paired nominal data**.
   - Continuous metrics (inference latency in milliseconds and total prompt/completion token consumption) will be evaluated using the non-parametric **Wilcoxon signed-rank test**.
   - Action-item limit compliance ($\le 3$ items for low-Elo prompts) will be evaluated using **Fisher’s exact test**.
@@ -164,7 +164,7 @@ The planned architecture for `aoe2-coach` decouples the system into five modular
 │           • `train.jsonl` / `val.jsonl` (Stratified Sampling)               │
 │                        │                                                    │
 │                        ▼                                                    │
-│         [ Hosted Fine-Tuned Model (GPT-4o-mini) ]                           │
+│         [ Hosted Fine-Tuned Transformer (Google Gemini 1.5 Flash) ]         │
 │           • Weight-Encoded Tech-Tree Knowledge (Ouyang et al., 2022)        │
 │           • Elo Persona Adaptation                                          │
 │           • Deterministic JSON Emission                                     │
@@ -200,7 +200,7 @@ Rather than expecting a raw neural network to memorize arithmetic damage formula
 To train the generative coaching model, we will construct a high-fidelity synthetic supervised fine-tuning (SFT) dataset pairing match telemetry prompts with verified coaching completions (Ouyang et al., 2022).
 
 #### *Training Data Formulation (`train.jsonl` / `val.jsonl`)*
-Each training instance follows the OpenAI Chat Completions JSONL schema. The training target is generated by running raw state vectors through the deterministic engines to obtain mathematically guaranteed counter-units and optimal villager targets, which are then structured into an Elo-calibrated JSON payload:
+Each training instance follows the standard conversational JSONL schema (supported natively by Google GenAI `TuningDataset` as well as standard chat completions). The training target is generated by running raw state vectors through the deterministic engines to obtain mathematically guaranteed counter-units and optimal villager targets, which are then structured into an Elo-calibrated JSON payload:
 
 ```json
 {
@@ -222,11 +222,11 @@ Each training instance follows the OpenAI Chat Completions JSONL schema. The tra
 ```
 
 #### *Stratified Sampling and Training Infrastructure*
-In strict alignment with the DSC 670 curriculum:
-- **Foundation Architecture**: OpenAI `gpt-4o-mini` will serve as the base model, selected for its strong structured output baseline, high parameter efficiency, low inference latency, and robust fine-tuning API support.
+In strict alignment with the course requirement that the architecture be transformer-based:
+- **Foundation Architecture**: Google `gemini-1.5-flash` will serve as the base model (Gemini Team, 2024), satisfying the transformer-based architectural requirement while delivering high parameter efficiency, low inference latency, and native structured JSON output support.
 - **Stratified & Adversarial Sampling**: Recognizing that a naive uniform sampling across 45 civilizations would provide only ~4 to 6 examples per civilization in a 250-sample dataset, the dataset generation pipeline will employ **stratified adversarial weighting**. Scenarios involving high-hallucination edge cases—specifically Mesoamerican civilizations (Aztecs, Mayans, Incas lacking cavalry), nomadic civilizations (Huns lacking houses), and asymmetric cavalry specialists (Gurjaras)—will be intentionally oversampled to ensure solid parameter adaptation.
-- **Hosted API Fine-Tuning**: Rather than deploying local parameter-efficient fine-tuning (PEFT/LoRA) which introduces complex local quantization dependencies and GPU memory limits, training will be executed using the hosted OpenAI Fine-Tuning API managed entirely through an end-to-end Python workflow in a Jupyter Notebook (`notebooks/Milestone3_FineTuning.ipynb`).
-- **Optimization & Loss Tracking**: Hyperparameters will be initialized at 3 training epochs with cosine learning rate scheduling. Loss metrics, token validation accuracy, and event logs will be extracted via OpenAI API endpoints and visualized using Matplotlib.
+- **Hosted Serverless Fine-Tuning (Google Cloud)**: Training will be executed using the Google GenAI fine-tuning API (Google AI Studio / Vertex AI) managed entirely through an end-to-end Python workflow in a Jupyter Notebook (`notebooks/Milestone3_FineTuning.ipynb`). This cloud-hosted approach ensures zero local VRAM or GPU overhead on the host machine running the game, eliminates the complex local quantization dependencies of PEFT/LoRA, and incurs \$0 standby hosting costs.
+- **Optimization & Loss Tracking**: Hyperparameters will be initialized at 3 training epochs with a learning rate of 0.001 and batch size of 4. Loss convergence snapshots will be retrieved from the tuning task metadata via the `google-genai` SDK and visualized using Matplotlib.
 
 ### **4. Post-Generation Verification and Safety Guardrail**
 
@@ -250,13 +250,13 @@ As noted in the project mandate, initial thoughts about problem formulation almo
 1. **State Vector Sparsity and Partial Scouting Representation**: In early iterations, match telemetry assumes relatively clean, structured inputs. In live competitive gameplay, however, scouting data is frequently noisy, incomplete, or absent. In Milestone 2 (Prompt Experiments), we anticipate discovering that base models struggle when enemy unit counts are unknown. The prompt structure may need to incorporate probabilistic language or explicit "scouting priority" directives (e.g., *"Scout opponent forward radius before committing to anti-cavalry production"*).
 2. **Trade-Offs in Action Density vs. Token Latency**: While our current hypothesis suggests beginner players need exactly $\le 3$ action items, user testing may reveal that certain complex transitions require secondary prerequisites (e.g., researching a Blacksmith before building a Siege Workshop). Balancing brevity against tactical completeness will be empirically calibrated through the five benchmark experiments in Milestone 2.
 3. **Training Dataset Scale vs. Overfitting**: Current dataset targets anticipate generating 200 to 300 highly verified synthetic scenarios. Empirical training in Milestone 3 will reveal whether this volume suffices to eliminate tech-tree hallucinations across all 45 civilizations, or whether active data augmentation focusing specifically on edge-case civilizations (e.g., Mesoamericans, Huns, Gurjaras) is necessary to avoid catastrophic forgetting or narrow memorization.
-4. **Structured Outputs vs. JSON Mode**: OpenAI's API offers both standard JSON mode and constrained JSON Schema enforcement. In Milestone 2 and 3, we will evaluate whether constrained decoding eliminates the need for post-hoc Pydantic repair prompts, thereby reducing overall round-trip coaching latency.
+4. **Structured Outputs and Constrained Decoding**: Google's GenAI and Gemini APIs support typed schema definitions (`response_schema`) and constrained decoding. In Milestones 2 and 3, we will evaluate whether native schema enforcement completely eliminates the need for post-hoc Pydantic repair prompts, thereby minimizing round-trip coaching latency during live matches.
 
 ---
 
 ## **Conclusion**
 
-Real-time strategy games provide a rigorous testing ground for evaluating the real-world utility of generative artificial intelligence under strict cognitive, temporal, and ontological constraints. Off-the-shelf foundation models fall short in this domain, generating hallucinations, verbose uncalibrated prose, and unreliable schemas. By integrating deterministic game rules with hosted supervised fine-tuning of `gpt-4o-mini`, the `aoe2-coach` project offers a principled solution that converts complex match telemetry into real-time, skill-adapted tactical directives. This Milestone 1 paper establishes the theoretical foundation, academic goals, and initial engineering roadmap for the project, laying the groundwork for prompt experimentation in Milestone 2, model fine-tuning in Milestone 3, and interactive application delivery in Milestone 4.
+Real-time strategy games provide a rigorous testing ground for evaluating the real-world utility of generative artificial intelligence under strict cognitive, temporal, and ontological constraints. Off-the-shelf foundation models fall short in this domain, generating hallucinations, verbose uncalibrated prose, and unreliable schemas. By integrating deterministic game rules with hosted supervised fine-tuning of the transformer-based `gemini-1.5-flash` on Google Cloud, the `aoe2-coach` project offers a principled solution that converts complex match telemetry into real-time, skill-adapted tactical directives without imposing hardware contention on the host system. This Milestone 1 paper establishes the theoretical foundation, academic goals, and initial engineering roadmap for the project, laying the groundwork for prompt experimentation in Milestone 2, model fine-tuning in Milestone 3, and interactive application delivery in Milestone 4.
 
 ---
 
@@ -275,6 +275,8 @@ Baddeley, A. (2000). The episodic buffer: A new component of working memory? *Tr
 Brown, T., Mann, B., Ryder, N., Subbiah, M., Kaplan, J. D., Dhariwal, P., Neelakantan, A., Shyam, P., Sastry, G., Askell, A., Agarwal, S., Herbert-Voss, A., Krueger, G., Henighan, T., Child, R., Ramesh, A., Ziegler, D., Wu, J., Winter, C., … Amodei, D. (2020). Language models are few-shot learners. *Advances in Neural Information Processing Systems*, *33*, 1877–1901. https://proceedings.neurips.cc/paper/2020/hash/1457c0d6bfcb4967418bfb8ac142f64a-Abstract.html
 
 Buro, M. (2003). Real-time strategy games: A new AI research challenge. In *Proceedings of the 18th International Joint Conference on Artificial Intelligence (IJCAI-03)* (pp. 1534–1535). Morgan Kaufmann.
+
+Gemini Team, Google. (2024). *Gemini 1.5: Unlocking multimodal understanding across millions of tokens of context* (arXiv:2403.05530). arXiv. https://doi.org/10.48550/arXiv.2403.05530
 
 Ontañón, S., Synnaeve, G., Uriarte, A., Richoux, F., Churchill, D., & Preuss, M. (2013). A survey of real-time strategy game AI research and competition in StarCraft. *IEEE Transactions on Computational Intelligence and AI in Games*, *5*(4), 293–311. https://doi.org/10.1109/TCIAIG.2013.2286295
 

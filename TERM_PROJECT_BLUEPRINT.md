@@ -17,16 +17,16 @@ The `aoe2-coach` system is an advanced decision-support architecture designed to
 
 | Course Requirement | `aoe2-coach` Project Adaptation |
 | :--- | :--- |
-| **Milestone 1 (Week 2)**: Idea, Goals, Approach (APA Paper) | Proposal framing RTS cognitive overload and proposing an ELO-calibrated GenAI coach. |
+| **Milestone 1 (Week 2)**: Idea, Goals, Approach (APA Paper) | Proposal framing RTS cognitive overload and proposing an Elo-calibrated GenAI coach grounded in transformer architectures. |
 | **Milestone 2 (Week 4)**: Refined Design & 5 Prompt Experiments | 5 benchmark prompt experiments highlighting failure modes of baseline foundation models (hallucinations, cognitive overload, schema violations). |
-| **Milestone 3 (Week 8)**: Fine-Tune OpenAI Model (Jupyter Notebook) | Hosted OpenAI fine-tuning (`gpt-4o-mini`), training tracking via OpenAI API endpoints, loss curve analysis, zero-hallucination verification. *(No LoRA; Jupyter Notebook submission only).* |
+| **Milestone 3 (Week 8)**: Fine-Tune Transformer Model on Google Cloud (Jupyter Notebook) | Hosted fine-tuning of transformer-based `gemini-1.5-flash` on Google Cloud (AI Studio / Vertex AI), training tracking via GenAI API endpoints, loss curve analysis, zero-hallucination verification. *(Transformer requirement satisfied; serverless execution with zero local hardware contention).* |
 | **Milestone 4 (Week 11)**: Final Application (Streamlit & Presentation) | Streamlit dashboard (`streamlit_app.py`) connecting to the fine-tuned model, accompanied by slide presentation and screenshots. |
 
 ---
 
 ## 2. Core GenAI Thesis: Why Fine-Tuning is Genuinely Useful
 
-In standard prompt engineering, general-purpose LLMs (`gpt-4o-mini`, `gpt-3.5-turbo`, `llama-3.2`) fail in competitive RTS coaching due to four domain-specific challenges:
+In standard prompt engineering, general-purpose foundation LLMs (`gemini-1.5-flash`, `gpt-4o-mini`, `llama-3.2`) fail in competitive RTS coaching due to four domain-specific challenges:
 
 ### 1. Civilization Tech-Tree Hallucinations
 General foundation models have loose, associative memory of game lore rather than rigid logical constraints:
@@ -34,11 +34,11 @@ General foundation models have loose, associative memory of game lore rather tha
 - Recommending **Paladins** to civilizations without them (e.g., *Britons*).
 - Recommending **Imperial Age technologies** to players in Feudal or Castle Age.
 
-### 2. Cognitive Overload & ELO Persona Calibration
+### 2. Cognitive Overload & Elo Persona Calibration
 Generic models default to verbose, conversational explanations containing 10–15 unranked instructions:
-- **Beginner (<1000 ELO)**: When floating 1,500 wood with an idle Town Center, the player cannot execute complex micro. They need **blunt, macro-first triage** limited to $\le 3$ high-impact action items (*"Stop cutting wood. Build 2 Town Centers and seed farms immediately"*).
-- **Intermediate (1000–1400 ELO)**: Needs advice focused on civ power spikes, blacksmith upgrade priority (armor vs. attack), and timely military transitions.
-- **Advanced (>1400 ELO)**: Requires technical RTS analysis—micro kiting, hill positioning advantage, and precise attack timing windows down to the minute.
+- **Beginner (<1000 Elo)**: When floating 1,500 wood with an idle Town Center, the player cannot execute complex micro. They need **blunt, macro-first triage** limited to $\le 3$ high-impact action items (*"Stop cutting wood. Build 2 Town Centers and seed farms immediately"*).
+- **Intermediate (1000–1400 Elo)**: Needs advice focused on civ power spikes, blacksmith upgrade priority (armor vs. attack), and timely military transitions.
+- **Advanced (>1400 Elo)**: Requires technical RTS analysis—micro kiting, hill positioning advantage, and precise attack timing windows down to the minute.
 
 ### 3. Inference Latency & Token Bloat
 Passing complete tech trees, counter formulas, and few-shot examples inside system prompts consumes 2,000–3,500 tokens per request. In an RTS match, coaching advice must arrive in $\le 1\text{s}$. Fine-tuning encodes the domain knowledge into the model weights, minimizing prompt size, latency, and token cost.
@@ -58,16 +58,16 @@ Rather than hand-writing examples, the existing `aoe2-coach` repository contains
 ├───────────────────────┬─────────────────────────────┬───────────────────────┤
 │ Match Telemetry Input │ Deterministic Domain Engine │ Fine-Tuning Target    │
 ├───────────────────────┼─────────────────────────────┼───────────────────────┤
-│ • snapshots.parquet   │ • tech_tree.py              │ OpenAI Chat JSONL     │
+│ • snapshots.parquet   │ • tech_tree.py              │ Google GenAI JSONL    │
 │ • pro_datasets.py     │ • counter_matrix.py         │ • Zero hallucinations │
-│ • user_testing_calib. │ • economy_solver.py         │ • ELO-calibrated tone │
-│ • 45+ Civ Matchups    │ • fallback_engine.py        │ • Strict JSON Schema  │
+│ • user_testing_calib. │ • economy_solver.py         │ • Elo-calibrated tone │
+│ • 45 Civ Matchups     │ • fallback_engine.py        │ • Strict JSON Schema  │
 └───────────────────────┴─────────────────────────────┴───────────────────────┘
 ```
 
 ### Dataset Structure (`train.jsonl` / `val.jsonl`)
 
-Each training row follows the OpenAI Chat fine-tuning schema:
+Each training row follows the standard conversational fine-tuning schema (supported natively by Google GenAI and OpenAI formats):
 
 ```json
 {
@@ -109,12 +109,12 @@ Week 11 ──► Milestone 4: Streamlit Web Application & Final Presentation
      - Cognitive overload in RTS gameplay.
      - Limitations of retrospective analytics (AoE2Insight, CaptureAge) vs. real-time decision support.
   2. **Main Goal(s)**:
-     - Develop an AI Tactical Coach capable of turning raw match telemetry into real-time, ELO-calibrated natural language directives.
+     - Develop an AI Tactical Coach capable of turning raw match telemetry into real-time, Elo-calibrated natural language directives.
      - Achieve 0% tech-tree hallucinations and 100% JSON schema compliance.
   3. **Initial Approach**:
      - Extract game state vectors from replay logs (`.aoe2record` / `.parquet`).
-     - Utilize domain rules engines (counter matrices, LP economy solvers) as knowledge anchors.
-     - Fine-tune a foundation model (OpenAI) to deliver natural language tactical plans.
+     - Utilize domain rules engines (counter matrices, continuous rate-drain economy solvers) as knowledge anchors.
+     - Fine-tune a transformer-based foundation model (Google `gemini-1.5-flash` on Google Cloud) to deliver natural language tactical plans with zero local hardware contention and $0 standby hosting costs.
 
 ---
 
@@ -123,14 +123,14 @@ Week 11 ──► Milestone 4: Streamlit Web Application & Final Presentation
 - **Deliverables**: Formal paper (APA format) + Prompt experiment code.
 - **Content**:
   1. **Updated Problem Statement**: Detail the specific challenge of multi-modal match state interpretation under time pressure.
-  2. **Model Selection**: Foundation model: OpenAI `gpt-4o-mini` (fastest turnaround, high structured output compliance, cost-efficient fine-tuning).
+  2. **Model Selection**: Foundation model: Google `gemini-1.5-flash` (Transformer architecture meeting course criteria; serverless cloud execution ensuring 0% GPU/VRAM contention with running AoE2; high structured output adherence, cost-efficient fine-tuning).
   3. **5 Prompt Experiments**:
      - **Experiment 1 (Tech-Tree Constraint Test)**:
        - *Setup*: Prompt model with Mesoamerican civ (Aztecs) facing heavy cavalry.
        - *Observation*: Baseline zero-shot model suggests "build Stables or train Knights/Camels" (violates tech tree).
        - *Significance*: Establishes the necessity of domain fine-tuning.
-     - **Experiment 2 (Cognitive Load & ELO Persona Calibration)**:
-       - *Setup*: Low-ELO scenario (850 ELO) with severe resource floating.
+     - **Experiment 2 (Cognitive Load & Elo Persona Calibration)**:
+       - *Setup*: Low-Elo scenario (850 Elo) with severe resource floating.
        - *Observation*: Base model gives a 15-point multi-paragraph essay.
        - *Significance*: Fine-tuning needed to force strict $\le 3$ action item limit for beginners.
      - **Experiment 3 (Counter-Matrix Tactical Accuracy)**:
@@ -149,49 +149,54 @@ Week 11 ──► Milestone 4: Streamlit Web Application & Final Presentation
 
 ### Milestone 3 (Week 8): Build Your First Model
 
-- **Critical Rubric Requirement**: **Must be built entirely within a Jupyter Notebook (`.ipynb`)** using the OpenAI Fine-Tuning API. *(Do not use LoRA; use OpenAI full hosted fine-tuning).*
+- **Critical Rubric Requirement**: **Must be a transformer-based model built within a Jupyter Notebook (`.ipynb`)** utilizing hosted fine-tuning on Google Cloud (Google AI Studio / Vertex AI). *(Serverless execution ensures zero local GPU/VRAM contention alongside running AoE2, and $0 idle hosting costs).*
 - **Notebook Implementation Workflow (`notebooks/Milestone3_FineTuning.ipynb`)**:
 
 ```python
-# 1. Initialize OpenAI Client
+# 1. Initialize Google GenAI Client
 import os
 import time
-import json
 import matplotlib.pyplot as plt
 import pandas as pd
-from openai import OpenAI
+from google import genai
+from google.genai import types
 
-client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
-# 2. Upload Training & Validation Files
-train_file = client.files.create(
-    file=open("data/finetune/aoe2_coach_train.jsonl", "rb"),
-    purpose="fine-tune"
-)
-val_file = client.files.create(
-    file=open("data/finetune/aoe2_coach_val.jsonl", "rb"),
-    purpose="fine-tune"
+# 2. Upload Training & Validation Dataset (JSONL format)
+training_dataset = types.TuningDataset(
+    # Can load from local JSONL or Google Cloud Storage URI
+    gcs_uri="gs://your-bucket/aoe2_coach_train.jsonl"
 )
 
-# 3. Launch Fine-Tuning Job
-job = client.fine_tuning.jobs.create(
-    training_file=train_file.id,
-    validation_file=val_file.id,
-    model="gpt-4o-mini",
-    hyperparameters={"n_epochs": 3}
+# 3. Launch Transformer Fine-Tuning Job on Google Cloud
+operation = client.tunings.tune(
+    base_model="models/gemini-1.5-flash-001",
+    training_dataset=training_dataset,
+    config=types.CreateTunedModelConfig(
+        display_name="aoe2-tactical-coach",
+        epoch_count=3,
+        batch_size=4,
+        learning_rate=0.001,
+    ),
 )
 
-# 4. Track Build Events via Endpoints (as demonstrated in Chapter 7)
-while True:
-    status = client.fine_tuning.jobs.retrieve(job.id)
-    print(f"Status: {status.status}")
-    if status.status in ["succeeded", "failed", "cancelled"]:
-        break
+# 4. Track Build Events via Endpoints
+print(f"Tuning job started: {operation.name}")
+while not operation.done:
+    print("Training in progress on Google Cloud...")
     time.sleep(30)
+    operation = client.operations.get(operation.name)
 
 # 5. Extract and Plot Training Metrics
-events = client.fine_tuning.jobs.list_events(fine_tuning_job_id=job.id, limit=100)
-# Extract training_loss, validation_loss, and full token accuracy curves...
+tuned_model = operation.result
+loss_history = [snapshot.mean_loss for snapshot in tuned_model.tuning_task.snapshots]
+plt.plot(loss_history)
+plt.title("Gemini 1.5 Flash Training Loss Convergence")
+plt.xlabel("Step")
+plt.ylabel("Mean Loss")
+plt.grid(True)
+plt.show()
 ```
 
 - **Notebook Evaluation & Commentary**:
@@ -199,8 +204,8 @@ events = client.fine_tuning.jobs.list_events(fine_tuning_job_id=job.id, limit=10
   - Calculate and report:
     - **Tech-Tree Hallucination Rate**: Base Model ($\sim 25\text{--}40\%$) vs. Fine-Tuned Model ($0\%$).
     - **JSON Validation Rate**: Base Model ($\sim 85\%$) vs. Fine-Tuned Model ($100\%$).
-    - **ELO Action Limit Compliance**: Base Model ($\sim 40\%$) vs. Fine-Tuned Model ($100\%$).
-  - In-depth Markdown commentary reflecting on training loss convergence and domain adaptation.
+    - **Elo Action Limit Compliance**: Base Model ($\sim 40\%$) vs. Fine-Tuned Model ($100\%$).
+  - In-depth Markdown commentary reflecting on training loss convergence, transformer domain adaptation, and latency metrics.
 
 ---
 
@@ -217,8 +222,8 @@ events = client.fine_tuning.jobs.list_events(fine_tuning_job_id=job.id, limit=10
 ├───────────────────────┼─────────────────────────────────────────────────────┤
 │ • Match Setup         │ 1. Tactical Directive Header (Banner)               │
 │   - Player / Opp Civ  │    "CASTLE AGE CAVALRY PUSH" (Urgency: High)        │
-│   - Age / Game Time   │ 2. ELO-Calibrated Coach Commentary                  │
-│   - Player ELO Slider │ 3. Military & Counter Plan                          │
+│   - Age / Game Time   │ 2. Elo-Calibrated Coach Commentary                  │
+│   - Player Elo Slider │ 3. Military & Counter Plan                          │
 │ • Telemetry Input     │    - Primary Unit + Tech Upgrade Order              │
 │   - Stockpile Sliders │    - Micro & Positioning Guidance                   │
 │   - Villager Sliders  │ 4. Macro Economy Rebalancer                         │
@@ -241,8 +246,8 @@ events = client.fine_tuning.jobs.list_events(fine_tuning_job_id=job.id, limit=10
 
 ## 5. Summary Checklist of Next Actions
 
-- [ ] **Week 2**: Submit Milestone 1 APA paper articulating the problem, goals, and GenAI approach.
+- [ ] **Week 2**: Submit Milestone 1 APA paper articulating the problem, goals, and transformer-based GenAI approach.
 - [ ] **Week 4**: Execute the 5 baseline prompt experiments; submit Milestone 2 APA paper and code.
 - [ ] **Week 6–7**: Run `scripts/generate_finetune_dataset.py` to produce 200–300 verified JSONL training pairs.
-- [ ] **Week 8**: Execute `Milestone3_FineTuning.ipynb` on OpenAI, track metrics via API endpoints, and submit the completed Jupyter Notebook.
+- [ ] **Week 8**: Execute `Milestone3_FineTuning.ipynb` on Google Cloud (Gemini 1.5 Flash), track metrics via API endpoints, and submit the completed Jupyter Notebook.
 - [ ] **Week 11**: Polish `streamlit_app.py`, capture screenshots, build the presentation deck, and finalize the term project.
