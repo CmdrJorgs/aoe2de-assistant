@@ -91,10 +91,31 @@ BUILDING_ALIASES: Dict[str, str] = {
     "siege workshop": "Siege Workshop", "workshop": "Siege Workshop", "workshops": "Siege Workshop", "siege": "Siege Workshop",
     "monastery": "Monastery", "monasteries": "Monastery",
     "blacksmith": "Blacksmith", "market": "Market", "university": "University",
-    "castle": "Castle", "castles": "Castle",
-    "dock": "Dock", "docks": "Dock", "tower": "Watch Tower", "towers": "Watch Tower",
+    "castle": "Castle", "castles": "Castle", "dock": "Dock", "docks": "Dock",
+    "tower": "Watch Tower", "towers": "Watch Tower",
     "outpost": "Outpost", "wall": "Stone Wall", "walls": "Stone Wall", "gate": "Gate",
 }
+
+# Precompiled regex patterns for units and buildings
+UNIT_PATTERNS: List[Tuple[re.Pattern, str]] = [
+    (
+        re.compile(
+            rf"(?:spotted|saw|seen|sighted|enemy has|facing)?\s*(\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|twenty)?\s*{re.escape(alias)}\b"
+        ),
+        unit_name,
+    )
+    for alias, unit_name in UNIT_ALIASES.items()
+]
+
+BUILDING_PATTERNS: List[Tuple[re.Pattern, str]] = [
+    (
+        re.compile(
+            rf"(?:spotted|saw|seen|sighted|enemy has|built|dropped)?\s*(\d+|one|two|three|four|five|a|an)?\s*{re.escape(alias)}\b"
+        ),
+        bldg_name,
+    )
+    for alias, bldg_name in BUILDING_ALIASES.items()
+]
 
 
 def parse_number_expression(text: str) -> Optional[int]:
@@ -250,10 +271,8 @@ class VoiceTranscriptParser:
         # 7. Sighted Enemy Units
         # e.g., "spotted 5 Berserkers", "see 10 archers", "enemy has 4 knights", "sighted a castle"
         sighted_units: Dict[str, int] = dict(snapshot.sighted_enemy_units)
-        for alias, unit_name in UNIT_ALIASES.items():
-            # Match patterns like: "5 berserkers", "saw 5 berserk", "spotted five knights"
-            pattern = rf"(?:spotted|saw|seen|sighted|enemy has|facing)?\s*(\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|twenty)?\s*{re.escape(alias)}\b"
-            for match in re.finditer(pattern, raw_lower):
+        for pattern, unit_name in UNIT_PATTERNS:
+            for match in pattern.finditer(raw_lower):
                 num_str = match.group(1) or "1"
                 count = parse_number_expression(num_str) or 1
                 sighted_units[unit_name] = sighted_units.get(unit_name, 0) + count
@@ -264,9 +283,8 @@ class VoiceTranscriptParser:
 
         # 8. Sighted Enemy Buildings
         sighted_buildings: Dict[str, int] = dict(snapshot.sighted_enemy_buildings)
-        for alias, bldg_name in BUILDING_ALIASES.items():
-            pattern = rf"(?:spotted|saw|seen|sighted|enemy has|built|dropped)?\s*(\d+|one|two|three|four|five|a|an)?\s*{re.escape(alias)}\b"
-            for match in re.finditer(pattern, raw_lower):
+        for pattern, bldg_name in BUILDING_PATTERNS:
+            for match in pattern.finditer(raw_lower):
                 num_str = match.group(1) or "1"
                 count = parse_number_expression(num_str) or 1
                 # Filter out player's own statements like "I have 2 stables"
