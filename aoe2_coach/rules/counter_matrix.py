@@ -51,6 +51,7 @@ class CounterMatrixEngine:
     def __init__(self, ruleset: Optional[Any] = None, patch_version: Optional[str] = None):
         self.ruleset = ruleset
         self.patch_version = patch_version
+        self._duel_cache: Dict[Tuple[str, str, str, str, Optional[int], str], Any] = {}
 
     def analyze_threat(
         self,
@@ -147,6 +148,9 @@ class CounterMatrixEngine:
         # Get dominant enemy stats
         enemy_stat = get_unit_stats(threat.dominant_enemy_unit) or get_unit_stats("knight")
 
+        ruleset_key = id(active_ruleset) if active_ruleset is not None else None
+        patch_ver = getattr(active_ruleset, "patch_version", self.patch_version) or ""
+
         # Candidate units to evaluate from player's tech tree
         candidate_options: List[CounterOption] = []
 
@@ -161,14 +165,27 @@ class CounterMatrixEngine:
             if u_stat.category == "economy" or u_id in ("villager", "trade_cart", "fishing_ship"):
                 continue
 
-            # Simulate duel vs dominant enemy
-            duel = simulate_duel(
-                u_stat,
-                enemy_stat,
-                unit1_civ=civ_name,
-                unit2_civ=enemy_civ,
-                ruleset=active_ruleset,
+            cache_key = (
+                u_stat.id,
+                enemy_stat.id,
+                civ_name.lower(),
+                (enemy_civ or "").lower(),
+                ruleset_key,
+                patch_ver,
             )
+            duel = self._duel_cache.get(cache_key)
+            if duel is None:
+                if len(self._duel_cache) > 10000:
+                    self._duel_cache.clear()
+                # Simulate duel vs dominant enemy
+                duel = simulate_duel(
+                    u_stat,
+                    enemy_stat,
+                    unit1_civ=civ_name,
+                    unit2_civ=enemy_civ,
+                    ruleset=active_ruleset,
+                )
+                self._duel_cache[cache_key] = duel
 
             # Determine key technologies
             key_techs = []
